@@ -1,0 +1,35 @@
+version: '3.9'
+#deploy with: docker compose up -d
+services:
+  app-be:
+    image: 'vaslim/subtitlefts'
+    build:
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev #active profile, one of: local, dev, prod
+      - JOB_CRON=0 0 14 * * ? #cron schedule for automatic run
+      - ELASTICSEARCH_ADDRESS=elasticsearch:9200
+      - ELASTICSEARCH_USERNAME=elastic
+      - ELASTICSEARCH_PASSWORD=8H5pCjTxZdvX=+1_qfG5
+
+    depends_on:
+      - elasticsearch
+
+  elasticsearch:
+    image: elasticsearch/elasticsearch:8.9.2
+    container_name: es01
+    networks:
+      - elastic
+    ports:
+    - "9200:9200"
+    deploy:
+      resources:
+        limits:
+          memory: 3G
+    environment:
+    - discovery.type=single-node
+
+networks:
+  elastic:
