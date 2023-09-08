@@ -6,5 +6,6 @@ import org.vaslim.subtitle_fts.model.Subtitle;
 import java.util.List;
 
 public interface SubtitleRepository extends ElasticsearchRepository<Subtitle, String> {
-    List<Subtitle> findByVideoNameOrText(String query);
+    List<Subtitle> findByText(String query);
 }
+

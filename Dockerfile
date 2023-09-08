@@ -9,5 +9,7 @@ RUN mvn package -Dmaven.test.skip
 # Second stage: run the jar using Corretto
 FROM amazoncorretto:17
 COPY --from=builder /app/target/*.jar app.jar
+
+RUN mkdir -p /mnt/data
 EXPOSE 8081
 ENTRYPOINT ["java","-jar","/app.jar"]

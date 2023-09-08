@@ -16,7 +16,7 @@ public class IndexingJob {
         this.indexService = indexService;
     }
 
-    @Scheduled(cron = "${JOB_CRON}")
+    @Scheduled(cron = "${job.cron}")
     public void run() {
         indexService.runIndexing();
     }

@@ -13,10 +13,12 @@ services:
       - ELASTICSEARCH_ADDRESS=elasticsearch:9200
       - ELASTICSEARCH_USERNAME=elastic
       - ELASTICSEARCH_PASSWORD=8H5pCjTxZdvX=+1_qfG5
+      - FILES_ITERATION_SIZE=10 #number of files to index at once, lower values use less memory, higher values increase performance
 
     depends_on:
       - elasticsearch
-
+    volumes:
+      - /var/home/vaslim/Videos/batchtool2:/mnt/data:r
   elasticsearch:
     image: elasticsearch/elasticsearch:8.9.2
     container_name: es01
@@ -30,6 +32,15 @@ services:
           memory: 3G
     environment:
     - discovery.type=single-node
+    - ELASTIC_PASSWORD=8H5pCjTxZdvX=+1_qfG5
+    #- xpack.security.enabled=true
+    #- xpack.security.transport.ssl.enabled=true
+    #- xpack.security.transport.ssl.verification_mode=certificate
+    #- xpack.security.transport.ssl.keystore.path=/usr/share/elasticsearch/config/certificates/elastic-certificates.p12
+    #- xpack.security.transport.ssl.truststore.path=/usr/share/elasticsearch/config/certificates/elastic-certificates.p12
+    volumes: ['esdata:/usr/share/elasticsearch/data', 'certs:/usr/share/elasticsearch/config/certificates']
 
 networks:
   elastic:
+
+volumes: {"esdata", "certs"}

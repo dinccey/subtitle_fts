@@ -18,6 +18,6 @@ public class SubtitleServiceImpl implements SubtitleService {
 
     @Override
     public List<Subtitle> findVideosByTitleOrSubtitleContent(String query) {
-        return subtitleRepository.findByVideoNameOrText(query);
+        return subtitleRepository.findByText(query);
     }
 }

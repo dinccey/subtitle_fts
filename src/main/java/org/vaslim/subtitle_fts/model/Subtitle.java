@@ -13,10 +13,12 @@ public class Subtitle {
     @Id
     private String id;
 
+    @Field(type = FieldType.Text, name = "videoName")
     private String videoName;
 
     private String timestamp;
 
+    @Field(type = FieldType.Text, name = "text")
     private String text;
 
     public String getId() {
