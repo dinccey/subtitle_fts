@@ -11,5 +11,7 @@ FROM amazoncorretto:17
 COPY --from=builder /app/target/*.jar app.jar
 
 RUN mkdir -p /mnt/data
+RUN mkdir -p /usr/share/ssl_bundle
+
 EXPOSE 8081
 ENTRYPOINT ["java","-jar","/app.jar"]
