@@ -2,6 +2,8 @@ package org.vaslim.subtitle_fts.service.impl;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.transport.ElasticsearchTransport;
+import org.springframework.data.elasticsearch.client.elc.ElasticsearchTemplate;
+import org.springframework.data.elasticsearch.core.mapping.IndexCoordinates;
 import org.springframework.stereotype.Service;
 import org.vaslim.subtitle_fts.model.Subtitle;
 import org.vaslim.subtitle_fts.repository.SubtitleRepository;
@@ -33,5 +35,11 @@ public class IndexServiceImpl implements IndexService {
         while (!(subtitles = dataFetchService.getNextSubtitleData()).isEmpty()) {
            subtitleRepository.saveAll(subtitles);
         }
+    }
+
+    @Override
+    public void deleteIndex() {
+        ElasticsearchTemplate elasticsearchTemplate = new ElasticsearchTemplate(elasticsearchClient);
+        elasticsearchTemplate.indexOps(IndexCoordinates.of("video")).delete();
     }
 }

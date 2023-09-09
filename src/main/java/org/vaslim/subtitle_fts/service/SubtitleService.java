@@ -7,5 +7,7 @@ import java.util.List;
 
 @Service
 public interface SubtitleService {
-    List<Subtitle> findVideosByTitleOrSubtitleContent(String query);
+    List<Subtitle> findVideosByTitleOrSubtitleContentFuzzy(String query);
+
+    List<Subtitle> findVideosByTitleOrSubtitleContentExact(String query);
 }

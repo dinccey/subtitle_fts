@@ -17,8 +17,13 @@ public class SearchController {
         this.subtitleService = subtitleService;
     }
 
-    @GetMapping("/query")
-    public ResponseEntity<List<Subtitle>> getVideoByQuery(@RequestParam String query){
-        return ResponseEntity.ok(subtitleService.findVideosByTitleOrSubtitleContent(query));
+    @GetMapping("/fuzzy")
+    public ResponseEntity<List<Subtitle>> getVideoByQueryFuzzy(@RequestParam String query){
+        return ResponseEntity.ok(subtitleService.findVideosByTitleOrSubtitleContentFuzzy(query));
+    }
+
+    @GetMapping("/exact")
+    public ResponseEntity<List<Subtitle>> getVideoByQueryExact(@RequestParam String query){
+        return ResponseEntity.ok(subtitleService.findVideosByTitleOrSubtitleContentFuzzy(query));
     }
 }

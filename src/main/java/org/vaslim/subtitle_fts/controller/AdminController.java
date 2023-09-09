@@ -24,8 +24,14 @@ public class AdminController {
     }
 
     @GetMapping("/index")
-    public ResponseEntity<List<Subtitle>> getVideoByQuery(){
+    public ResponseEntity<?> runIndex(){
         indexService.runIndexing();
+        return ResponseEntity.status(HttpStatus.OK).build();
+    }
+
+    @GetMapping("/index/delete")
+    public ResponseEntity<?> deleteIndex(){
+        indexService.deleteIndex();
         return ResponseEntity.status(HttpStatus.OK).build();
     }
 }

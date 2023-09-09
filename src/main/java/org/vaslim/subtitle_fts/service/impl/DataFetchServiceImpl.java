@@ -29,21 +29,34 @@ public class DataFetchServiceImpl implements DataFetchService {
         nextFiles.forEach(file -> {
             if(file.getName().endsWith(".srt")){
                 List<SubtitleDTO> subtitleDTOS = SRTParser.getSubtitlesFromFile(file.getPath());
-                subtitleDTOS.forEach(subtitleDTO -> {
-                    subtitles.add(populateSubtitle(subtitleDTO, file.getName()));
-                });
+
+                for(int i = 0; i< subtitleDTOS.size(); i++){
+                    SubtitleDTO previousSubtitleDTO = null;
+                    if(i > 0){
+                        previousSubtitleDTO = subtitleDTOS.get(i-1);
+                    }
+                    SubtitleDTO nextSubtitleDTO = null;
+                    if(i < subtitleDTOS.size()-1){
+                        nextSubtitleDTO = subtitleDTOS.get(i+1);
+                    }
+                    subtitles.add(populateSubtitle(subtitleDTOS.get(i),previousSubtitleDTO, nextSubtitleDTO,file.getName()));
+                }
             }
         });
 
         return subtitles;
     }
 
-    private Subtitle populateSubtitle(SubtitleDTO subtitleDTO, String fileName) {
+    private Subtitle populateSubtitle(SubtitleDTO subtitleDTO,SubtitleDTO previousSubtitleDTO, SubtitleDTO nextSubtitleDTO, String fileName) {
         Subtitle subtitle = new Subtitle();
         subtitle.setVideoName(fileName.substring(0, fileName.lastIndexOf(".")));
-        subtitle.setText(subtitleDTO.text);
-        subtitle.setTimestamp(subtitleDTO.startTime);
-        subtitle.setId(generateId(subtitle.getVideoName(), subtitle.getText()));
+        try{
+            subtitle.setText(previousSubtitleDTO.text + " " + subtitleDTO.text +" "+ nextSubtitleDTO.text);
+            subtitle.setTimestamp(subtitleDTO.startTime);
+            subtitle.setId(generateId(subtitle.getVideoName(), subtitle.getText()));
+        }catch (NullPointerException e){
+            subtitle.setText(subtitleDTO.text);
+        }
 
         return subtitle;
     }
