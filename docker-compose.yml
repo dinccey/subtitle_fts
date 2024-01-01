@@ -8,14 +8,14 @@ services:
     ports:
       - "8083:8081"
     environment:
-      - SPRING_PROFILES_ACTIVE=dev #active profile, one of: local, dev, prod
-      - JOB_CRON=0 0 14 * * ? #cron schedule for automatic run
-      - ELASTICSEARCH_ADDRESS=elasticsearch:9200
-      - ELASTICSEARCH_USERNAME=elastic
-      - ELASTICSEARCH_PASSWORD=8H5pCjTxZdvX=+1_qfG5
-      - FILES_ITERATION_SIZE=10 #number of files to index at once, lower values use less memory, higher values increase performance
-      - ADMIN_PASSWORD=mysecurepassword
-      - JWT_SECRET=r2Jwsg7xCKvHh2feB2FGsCr2Jwsg7xCKvHh2feB2FGsC #change this
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} #active profile, one of: local, dev, prod
+      - JOB_CRON=${JOB_CRON} #cron schedule for automatic run
+      - ELASTICSEARCH_ADDRESS=${ELASTICSEARCH_ADDRESS}
+      - ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME}
+      - ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_PASSWORD}
+      - FILES_ITERATION_SIZE=${FILES_ITERATION_SIZE} #number of files to index at once, lower values use less memory, higher values increase performance
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET} #change this
 
     depends_on:
       - elasticsearch
@@ -49,7 +49,7 @@ services:
           memory: 3G
     environment:
     - discovery.type=single-node
-    - ELASTIC_PASSWORD=8H5pCjTxZdvX=+1_qfG5
+    - ELASTIC_PASSWORD=${ELASTICSEARCH_PASSWORD}
     - xpack.security.enabled=true
     - xpack.security.transport.ssl.enabled=true
     - xpack.security.transport.ssl.verification_mode=certificate
