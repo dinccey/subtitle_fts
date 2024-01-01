@@ -1,62 +1,64 @@
 package org.vaslim.subtitle_fts.service.impl;
 
+import fr.noop.subtitle.model.SubtitleCue;
+import fr.noop.subtitle.model.SubtitleParsingException;
+import fr.noop.subtitle.vtt.VttObject;
+import fr.noop.subtitle.vtt.VttParser;
 import org.springframework.stereotype.Service;
 import org.vaslim.subtitle_fts.model.Subtitle;
 import org.vaslim.subtitle_fts.service.DataFetchService;
 import org.vaslim.subtitle_fts.service.FileService;
-import org.vaslim.subtitle_fts.srtparsing.SRTParser;
-import org.vaslim.subtitle_fts.srtparsing.SubtitleDTO;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class DataFetchServiceImpl implements DataFetchService {
 
     private final FileService fileService;
 
-    public DataFetchServiceImpl(FileService fileService) {
+    private final VttParser vttParser;
+
+    public DataFetchServiceImpl(FileService fileService, VttParser vttParser) {
         this.fileService = fileService;
+        this.vttParser = vttParser;
     }
 
     @Override
-    public List<Subtitle> getNextSubtitleData() {
+    public Set<Subtitle> getNextSubtitleData() {
         List<File> nextFiles = fileService.getNext();
-        List<Subtitle> subtitles = new ArrayList<>();
+        Set<Subtitle> subtitles = new HashSet<>();
         nextFiles.forEach(file -> {
-            if(file.getName().endsWith(".srt")){
-                List<SubtitleDTO> subtitleDTOS = SRTParser.getSubtitlesFromFile(file.getPath());
-
-                for(int i = 0; i< subtitleDTOS.size(); i++){
-                    SubtitleDTO previousSubtitleDTO = null;
-                    if(i > 0){
-                        previousSubtitleDTO = subtitleDTOS.get(i-1);
-                    }
-                    SubtitleDTO nextSubtitleDTO = null;
-                    if(i < subtitleDTOS.size()-1){
-                        nextSubtitleDTO = subtitleDTOS.get(i+1);
-                    }
-                    subtitles.add(populateSubtitle(subtitleDTOS.get(i),previousSubtitleDTO, nextSubtitleDTO,file.getName()));
+            if(file.getName().endsWith(".vtt")){
+                VttObject vttObject;
+                try {
+                    vttObject = vttParser.parse(new FileInputStream(file));
+                } catch (IOException | SubtitleParsingException e) {
+                    throw new RuntimeException(e);
                 }
+
+                List<SubtitleCue> subtitleCues = vttObject.getCues();
+                subtitleCues.forEach(subtitleCue -> {
+                    subtitles.add(populateSubtitle(subtitleCue, file.getPath()));
+                });
             }
         });
 
         return subtitles;
     }
 
-    private Subtitle populateSubtitle(SubtitleDTO subtitleDTO,SubtitleDTO previousSubtitleDTO, SubtitleDTO nextSubtitleDTO, String fileName) {
+    private Subtitle populateSubtitle(SubtitleCue subtitleCue, String fileName) {
         Subtitle subtitle = new Subtitle();
-        subtitle.setVideoName(fileName.substring(0, fileName.lastIndexOf(".")));
-        try{
-            subtitle.setText(previousSubtitleDTO.text + " " + subtitleDTO.text +" "+ nextSubtitleDTO.text);
-            subtitle.setTimestamp(subtitleDTO.startTime);
-            subtitle.setId(generateId(subtitle.getVideoName(), subtitle.getText()));
-        }catch (NullPointerException e){
-            subtitle.setText(subtitleDTO.text);
-        }
+        subtitle.setVideoName(fileName);
+        subtitle.setText(subtitleCue.getText());
+        subtitle.setTimestamp(subtitleCue.getStartTime().toString());
+        subtitle.setId(generateId(subtitle.getVideoName(), subtitle.getText()));
 
         return subtitle;
     }

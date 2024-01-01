@@ -10,7 +10,7 @@ import org.vaslim.subtitle_fts.repository.SubtitleRepository;
 import org.vaslim.subtitle_fts.service.DataFetchService;
 import org.vaslim.subtitle_fts.service.IndexService;
 
-import java.util.List;
+import java.util.Set;
 
 @Service
 public class IndexServiceImpl implements IndexService {
@@ -31,7 +31,7 @@ public class IndexServiceImpl implements IndexService {
 
     @Override
     public void runIndexing() {
-        List<Subtitle> subtitles;
+        Set<Subtitle> subtitles;
         while (!(subtitles = dataFetchService.getNextSubtitleData()).isEmpty()) {
            subtitleRepository.saveAll(subtitles);
         }
