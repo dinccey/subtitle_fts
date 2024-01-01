@@ -20,7 +20,7 @@ services:
     depends_on:
       - elasticsearch
     volumes:
-      - /var/home/vaslim/Videos/batchtool2:/mnt/data #data volume with subtitles
+      - ${DATA_BASE_PATH}:/mnt/data #data volume with subtitles
       - certs:/usr/share/ssl_bundle
   create_certs:
     container_name: create_certs
@@ -50,7 +50,7 @@ services:
     environment:
     - discovery.type=single-node
     - ELASTIC_PASSWORD=${ELASTICSEARCH_PASSWORD}
-    - xpack.security.enabled=true
+    - xpack.security.enabled=false
     - xpack.security.transport.ssl.enabled=true
     - xpack.security.transport.ssl.verification_mode=certificate
     - xpack.security.transport.ssl.keystore.path=/usr/share/elasticsearch/config/certificates/elastic-certificates.p12
