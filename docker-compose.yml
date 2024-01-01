@@ -24,7 +24,7 @@ services:
       - certs:/usr/share/ssl_bundle
   create_certs:
     container_name: create_certs
-    image: elasticsearch/elasticsearch:8.9.2
+    image: elasticsearch:8.11.3
     command: >
       bash -c '
         if [[ ! -f ./config/certificates/elastic-certificates.p12 ]]; then
@@ -37,7 +37,7 @@ services:
     volumes: ['certs:/usr/share/elasticsearch/config/certificates']
 
   elasticsearch:
-    image: elasticsearch/elasticsearch:8.9.2
+    image: elasticsearch:8.11.3
     container_name: elasticsearch01
     networks:
       - elastic
