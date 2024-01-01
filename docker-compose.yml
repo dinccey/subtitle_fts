@@ -18,7 +18,8 @@ services:
       - JWT_SECRET=${JWT_SECRET} #change this
 
     depends_on:
-      - elasticsearch
+      elasticsearch:
+        condition: service_healthy
     volumes:
       - ${DATA_BASE_PATH}:/mnt/data #data volume with subtitles
       - certs:/usr/share/ssl_bundle
