@@ -2,8 +2,8 @@ package org.vaslim.subtitle_fts.service;
 
 import org.vaslim.subtitle_fts.model.Subtitle;
 
-import java.util.List;
+import java.util.Set;
 
 public interface DataFetchService {
-    List<Subtitle> getNextSubtitleData();
+    Set<Subtitle> getNextSubtitleData();
 }

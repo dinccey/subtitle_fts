@@ -8,9 +8,10 @@ import org.springframework.stereotype.Service;
 import org.vaslim.subtitle_fts.model.Subtitle;
 import org.vaslim.subtitle_fts.repository.SubtitleRepository;
 import org.vaslim.subtitle_fts.service.DataFetchService;
+import org.vaslim.subtitle_fts.service.FileService;
 import org.vaslim.subtitle_fts.service.IndexService;
 
-import java.util.List;
+import java.util.Set;
 
 @Service
 public class IndexServiceImpl implements IndexService {
@@ -19,22 +20,30 @@ public class IndexServiceImpl implements IndexService {
 
     private final ElasticsearchTransport elasticsearchTransport;
 
+    private final FileService fileService;
+
     private final SubtitleRepository subtitleRepository;
     private final DataFetchService dataFetchService;
 
-    public IndexServiceImpl(ElasticsearchClient elasticsearchClient, ElasticsearchTransport elasticsearchTransport, SubtitleRepository subtitleRepository, DataFetchService dataFetchService) {
+    public IndexServiceImpl(ElasticsearchClient elasticsearchClient, ElasticsearchTransport elasticsearchTransport, FileService fileService, SubtitleRepository subtitleRepository, DataFetchService dataFetchService) {
         this.elasticsearchClient = elasticsearchClient;
         this.elasticsearchTransport = elasticsearchTransport;
+        this.fileService = fileService;
         this.subtitleRepository = subtitleRepository;
         this.dataFetchService = dataFetchService;
     }
 
     @Override
     public void runIndexing() {
-        List<Subtitle> subtitles;
-        while (!(subtitles = dataFetchService.getNextSubtitleData()).isEmpty()) {
-           subtitleRepository.saveAll(subtitles);
+        Set<Subtitle> subtitles;
+        try {
+            while (!(subtitles = dataFetchService.getNextSubtitleData()).isEmpty()) {
+                subtitleRepository.saveAll(subtitles);
+            }
+        } finally {
+            fileService.reset(); //reset iterator
         }
+
     }
 
     @Override
