@@ -27,13 +27,28 @@ public class FileServiceImpl implements FileService {
 
     public List<File> getNext() {
         List<File> result = new ArrayList<>(); // create a result list
-        int count = 0; // count the number of items added
-        while (iterator.hasNext() && count < size) { // loop until iterator is exhausted or size is reached
-            result.add(iterator.next()); // add the next file to the result
-            count++; // increment the count
-        }
+        addFiles(iterator, result, size); // call the recursive method
         return result; // return the result
     }
+
+    private void addFiles(Iterator<File> iterator, List<File> result, int size) {
+        while (iterator.hasNext() && result.size() < size) { // loop until iterator is exhausted or size is reached
+            File nextFile = iterator.next(); // get the next file
+            if (nextFile.isDirectory()) { // if the file is a directory
+                File[] filesInDirectory = nextFile.listFiles(); // get all files in the directory
+                for (File file : filesInDirectory) { // for each file in the directory
+                    if (file.isDirectory()) { // if the file is a directory
+                        addFiles(Arrays.asList(file.listFiles()).iterator(), result, size); // recursively add files from the directory
+                    } else if (result.size() < size) { // if the file is not a directory and size is not reached
+                        result.add(file); // add the file to the result
+                    }
+                }
+            } else if (result.size() < size) { // if the file is not a directory and size is not reached
+                result.add(nextFile); // add the next file to the result
+            }
+        }
+    }
+
 
     @Override
     public void reset() {

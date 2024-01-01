@@ -4,6 +4,7 @@ import fr.noop.subtitle.model.SubtitleCue;
 import fr.noop.subtitle.model.SubtitleParsingException;
 import fr.noop.subtitle.vtt.VttObject;
 import fr.noop.subtitle.vtt.VttParser;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.vaslim.subtitle_fts.model.Subtitle;
 import org.vaslim.subtitle_fts.service.DataFetchService;
@@ -25,6 +26,9 @@ public class DataFetchServiceImpl implements DataFetchService {
 
     private final VttParser vttParser;
 
+    @Value("${files.path.root}")
+    private String path;
+
     public DataFetchServiceImpl(FileService fileService, VttParser vttParser) {
         this.fileService = fileService;
         this.vttParser = vttParser;
@@ -35,7 +39,7 @@ public class DataFetchServiceImpl implements DataFetchService {
         List<File> nextFiles = fileService.getNext();
         Set<Subtitle> subtitles = new HashSet<>();
         nextFiles.forEach(file -> {
-            if(file.getName().endsWith(".vtt")){
+            if(file.getAbsolutePath().endsWith(".vtt")){
                 VttObject vttObject;
                 try {
                     vttObject = vttParser.parse(new FileInputStream(file));
@@ -55,9 +59,13 @@ public class DataFetchServiceImpl implements DataFetchService {
 
     private Subtitle populateSubtitle(SubtitleCue subtitleCue, String fileName) {
         Subtitle subtitle = new Subtitle();
-        subtitle.setVideoName(fileName);
+        String videoName = fileName.replaceAll(path,"");
+        if(videoName.startsWith("/")){
+            videoName = videoName.substring(1);
+        }
+        subtitle.setVideoName(videoName);
         subtitle.setText(subtitleCue.getText());
-        subtitle.setTimestamp(subtitleCue.getStartTime().toString());
+        subtitle.setTimestamp(subtitleCue.getId().substring(0, subtitleCue.getId().indexOf(" ")));
         subtitle.setId(generateId(subtitle.getVideoName(), subtitle.getText()));
 
         return subtitle;
