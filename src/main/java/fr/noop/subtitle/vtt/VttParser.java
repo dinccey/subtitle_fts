@@ -90,8 +90,7 @@ public class VttParser implements SubtitleParser {
                 cursorStatus = CursorStatus.CUE_ID;
 
                 if (
-                    textLine.length() < 16 ||
-                    !textLine.substring(13, 16).equals("-->")
+                    textLine.contains("-->")
                 ) {
                     // First textLine is the cue number
                     cue.setId(textLine);
@@ -105,28 +104,28 @@ public class VttParser implements SubtitleParser {
 
             // Second textLine defines the start and end time codes
             // 00:01:21.456 --> 00:01:23.417
-            if (cursorStatus == CursorStatus.CUE_ID) {
-                if (textLine.length() < 29 ||
-                    !textLine.substring(13, 16).equals("-->")
-                ) {
-                    throw new SubtitleParsingException(String.format(
-                            "Timecode textLine is badly formated: %s", textLine));
-                }
-
-                cue.setStartTime(this.parseTimeCode(textLine.substring(0, 12)));
-                cue.setEndTime(this.parseTimeCode(textLine.substring(17)));
-                cursorStatus = CursorStatus.CUE_TIMECODE;
-                continue;
-            }
-
-            if (cursorStatus == CursorStatus.CUE_TIMECODE &&
-                textLine.isEmpty() &&
-                strict
-            ) {
-                // Do not accept empty subtitle if strict
-                throw new SubtitleParsingException(String.format(
-                        "Empty subtitle is not allowed in WebVTT for cue at timecode: %s", cue.getStartTime()));
-            }
+//            if (cursorStatus == CursorStatus.CUE_ID) {
+//                if (textLine.length() < 29 ||
+//                    !textLine.substring(13, 16).equals("-->")
+//                ) {
+//                    throw new SubtitleParsingException(String.format(
+//                            "Timecode textLine is badly formated: %s", textLine));
+//                }
+//
+//                cue.setStartTime(this.parseTimeCode(textLine.substring(0, 12)));
+//                cue.setEndTime(this.parseTimeCode(textLine.substring(17)));
+//                cursorStatus = CursorStatus.CUE_TIMECODE;
+//                continue;
+//            }
+//
+//            if (cursorStatus == CursorStatus.CUE_TIMECODE &&
+//                textLine.isEmpty() &&
+//                strict
+//            ) {
+//                // Do not accept empty subtitle if strict
+//                throw new SubtitleParsingException(String.format(
+//                        "Empty subtitle is not allowed in WebVTT for cue at timecode: %s", cue.getStartTime()));
+//            }
 
             // Enf of cue
             if (
