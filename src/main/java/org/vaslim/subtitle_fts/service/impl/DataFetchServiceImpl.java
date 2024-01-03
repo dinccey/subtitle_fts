@@ -4,6 +4,8 @@ import fr.noop.subtitle.model.SubtitleCue;
 import fr.noop.subtitle.model.SubtitleParsingException;
 import fr.noop.subtitle.vtt.VttObject;
 import fr.noop.subtitle.vtt.VttParser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.vaslim.subtitle_fts.model.Subtitle;
@@ -22,6 +24,7 @@ import java.util.Set;
 @Service
 public class DataFetchServiceImpl implements DataFetchService {
 
+    private static final Logger logger = LoggerFactory.getLogger(DataFetchServiceImpl.class);
     private final FileService fileService;
 
     private final VttParser vttParser;
@@ -38,6 +41,7 @@ public class DataFetchServiceImpl implements DataFetchService {
     public Set<Subtitle> getNextSubtitleData() {
         List<File> nextFiles = fileService.getNext();
         Set<Subtitle> subtitles = new HashSet<>();
+        logger.info("Number of subtitle files for parsing: " + nextFiles.size() + " Sample file name: " + nextFiles.stream().findAny().get().getAbsolutePath());
         nextFiles.forEach(file -> {
             if(file.getAbsolutePath().endsWith(".vtt")){
                 VttObject vttObject;
