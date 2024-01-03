@@ -2,6 +2,8 @@ package org.vaslim.subtitle_fts.service.impl;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.transport.ElasticsearchTransport;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.elasticsearch.client.elc.ElasticsearchTemplate;
 import org.springframework.data.elasticsearch.core.mapping.IndexCoordinates;
 import org.springframework.stereotype.Service;
@@ -16,6 +18,7 @@ import java.util.Set;
 @Service
 public class IndexServiceImpl implements IndexService {
 
+    private static final Logger logger = LoggerFactory.getLogger(IndexServiceImpl.class);
     private final ElasticsearchClient elasticsearchClient;
 
     private final ElasticsearchTransport elasticsearchTransport;
@@ -38,6 +41,7 @@ public class IndexServiceImpl implements IndexService {
         Set<Subtitle> subtitles;
         try {
             while (!(subtitles = dataFetchService.getNextSubtitleData()).isEmpty()) {
+                logger.info("Indexing batch size " + subtitles.size());
                 subtitleRepository.saveAll(subtitles);
             }
         } finally {
