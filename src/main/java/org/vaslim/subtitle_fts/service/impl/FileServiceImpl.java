@@ -14,7 +14,8 @@ public class FileServiceImpl implements FileService {
     @Value("${files.iteration.size}")
     private Integer size; // number of items to return
 
-    private Iterator<File> iterator; // iterator for the list
+    Iterator<File> firstIterator;
+    private Set<Iterator<File>> iterators = new HashSet<>();
 
     @Value("${files.path.root}")
     private String path;
@@ -22,13 +23,33 @@ public class FileServiceImpl implements FileService {
     public FileServiceImpl(@Value("${files.path.root}") String path) {
         // list of files in the path
         List<File> files = Arrays.asList(Objects.requireNonNull(new File(path).listFiles())); // get all files from the path
-        this.iterator = files.iterator(); // create an iterator
+        this.iterators.clear();
+        this.firstIterator = files.iterator();
+        addIterators(iterators, firstIterator);
     }
 
     public List<File> getNext() {
         List<File> result = new ArrayList<>(); // create a result list
-        addFiles(iterator, result, size); // call the recursive method
+        iterators.forEach(iterator -> {
+            addFiles(iterator, result, size);
+        });
+         // call the recursive method
         return result; // return the result
+    }
+
+    private void addIterators(Set<Iterator<File>> iterators, Iterator<File> firstIterator) {
+        while(firstIterator.hasNext()){
+            File nextFile = firstIterator.next();
+            if (nextFile.isDirectory()) { // if the file is a directory
+                File[] filesInDirectory = nextFile.listFiles(); // get all files in the directory
+                assert filesInDirectory != null;
+                for (File file : filesInDirectory) { // for each file in the directory
+                    if (file.isDirectory()) { // if the file is a directory
+                        iterators.add(Arrays.asList(Objects.requireNonNull(file.listFiles())).iterator());
+                    }
+                }
+            }
+        }
     }
 
     private void addFiles(Iterator<File> iterator, List<File> result, int size) {
@@ -53,6 +74,8 @@ public class FileServiceImpl implements FileService {
     @Override
     public void reset() {
         List<File> files = Arrays.asList(Objects.requireNonNull(new File(path).listFiles())); // get all files from the path
-        this.iterator = files.iterator(); // create an iter
+        this.iterators.clear();
+        this.firstIterator = files.iterator();
+        addIterators(iterators, firstIterator);
     }
 }

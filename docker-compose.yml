@@ -16,10 +16,10 @@ services:
       - FILES_ITERATION_SIZE=${FILES_ITERATION_SIZE} #number of files to index at once, lower values use less memory, higher values increase performance
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
       - JWT_SECRET=${JWT_SECRET} #change this
-
-    depends_on:
-      elasticsearch:
-        condition: service_healthy
+    restart: on-failure
+    #depends_on:
+      #elasticsearch:
+        #condition: service_healthy
     volumes:
       - ${DATA_BASE_PATH}:/mnt/data #data volume with subtitles
       - certs:/usr/share/ssl_bundle
@@ -48,11 +48,11 @@ services:
       resources:
         limits:
           memory: 3G
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:9200" ]
-      interval: 30s
-      timeout: 10s
-      retries: 5
+    #healthcheck:
+    #  test: [ "CMD", "curl", "-f", "http://localhost:9200" ]
+    #  interval: 30s
+    #  timeout: 10s
+    #  retries: 5
 
     environment:
     - discovery.type=single-node
