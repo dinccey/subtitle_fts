@@ -55,6 +55,7 @@ public class DataFetchServiceImpl implements DataFetchService {
                 subtitleCues.forEach(subtitleCue -> {
                     subtitles.add(populateSubtitle(subtitleCue, file.getPath()));
                 });
+                logger.info("Subtitle cues count: " + subtitleCues.size());
             }
         });
 
