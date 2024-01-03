@@ -1,5 +1,7 @@
 package org.vaslim.subtitle_fts.service.impl;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.vaslim.subtitle_fts.service.FileService;
@@ -10,6 +12,7 @@ import java.util.*;
 @Service
 public class FileServiceImpl implements FileService {
 
+    private static final Logger logger = LoggerFactory.getLogger(FileServiceImpl.class);
 
     @Value("${files.iteration.size}")
     private Integer size; // number of items to return
@@ -33,7 +36,7 @@ public class FileServiceImpl implements FileService {
         iterators.forEach(iterator -> {
             addFiles(iterator, result, size);
         });
-         // call the recursive method
+        logger.info("Get next result size: " + result.size());
         return result; // return the result
     }
 
@@ -77,5 +80,6 @@ public class FileServiceImpl implements FileService {
         this.iterators.clear();
         this.firstIterator = files.iterator();
         addIterators(iterators, firstIterator);
+        logger.info("Reset iterators.");
     }
 }
