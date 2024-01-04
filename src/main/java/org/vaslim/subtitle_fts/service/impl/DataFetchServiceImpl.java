@@ -40,6 +40,9 @@ public class DataFetchServiceImpl implements DataFetchService {
     @Override
     public Set<Subtitle> getNextSubtitleData() {
         List<File> nextFiles = fileService.getNext();
+        while ((long) nextFiles.size() > 0 && nextFiles.stream().noneMatch(f -> f.getAbsolutePath().endsWith(".vtt"))){
+            nextFiles = fileService.getNext();
+        }
         Set<Subtitle> subtitles = new HashSet<>();
         logger.info("Number of subtitle files for parsing: " + nextFiles.size() + " Count of subtitles: " + nextFiles.stream().filter(f->f.getAbsolutePath().endsWith(".vtt")).count());
         nextFiles.forEach(file -> {
