@@ -44,6 +44,7 @@ public class FileServiceImpl implements FileService {
         while(firstIterator.hasNext()){
             File nextFile = firstIterator.next();
             if (nextFile.isDirectory()) { // if the file is a directory
+                iterators.add(Arrays.asList(Objects.requireNonNull(nextFile.listFiles())).iterator());
                 File[] filesInDirectory = nextFile.listFiles(); // get all files in the directory
                 assert filesInDirectory != null;
                 for (File file : filesInDirectory) { // for each file in the directory
