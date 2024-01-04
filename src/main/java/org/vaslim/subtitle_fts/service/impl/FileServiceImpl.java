@@ -44,17 +44,14 @@ public class FileServiceImpl implements FileService {
         while(firstIterator.hasNext()){
             File nextFile = firstIterator.next();
             if (nextFile.isDirectory()) { // if the file is a directory
-                iterators.add(Arrays.asList(Objects.requireNonNull(nextFile.listFiles())).iterator());
                 File[] filesInDirectory = nextFile.listFiles(); // get all files in the directory
                 assert filesInDirectory != null;
-                for (File file : filesInDirectory) { // for each file in the directory
-                    if (file.isDirectory()) { // if the file is a directory
-                        iterators.add(Arrays.asList(Objects.requireNonNull(file.listFiles())).iterator());
-                        addIterators(iterators, Arrays.stream(Objects.requireNonNull(file.listFiles())).iterator());                    }
-                }
+                iterators.add(Arrays.asList(filesInDirectory).iterator());
+                addIterators(iterators, Arrays.asList(filesInDirectory).iterator());
             }
         }
     }
+
 
     private void addFiles(Iterator<File> iterator, List<File> result, int size) {
         while (iterator.hasNext() && result.size() < size) { // loop until iterator is exhausted or size is reached
