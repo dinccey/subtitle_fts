@@ -50,7 +50,7 @@ public class FileServiceImpl implements FileService {
                 for (File file : filesInDirectory) { // for each file in the directory
                     if (file.isDirectory()) { // if the file is a directory
                         iterators.add(Arrays.asList(Objects.requireNonNull(file.listFiles())).iterator());
-                    }
+                        addIterators(iterators, Arrays.stream(Objects.requireNonNull(file.listFiles())).iterator());                    }
                 }
             }
         }
