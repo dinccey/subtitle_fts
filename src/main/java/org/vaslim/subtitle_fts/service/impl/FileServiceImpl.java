@@ -25,10 +25,8 @@ public class FileServiceImpl implements FileService {
 
     public FileServiceImpl(@Value("${files.path.root}") String path) {
         // list of files in the path
-        List<File> files = Arrays.asList(Objects.requireNonNull(new File(path).listFiles())); // get all files from the path
-        this.iterators.clear();
-        this.firstIterator = files.iterator();
-        addIterators(iterators, firstIterator);
+        File rootDirectory = new File(path);
+        addIterators(iterators, rootDirectory);
     }
 
     public List<File> getNext() {
@@ -40,17 +38,17 @@ public class FileServiceImpl implements FileService {
         return result; // return the result
     }
 
-    private void addIterators(Set<Iterator<File>> iterators, Iterator<File> firstIterator) {
-        while(firstIterator.hasNext()){
-            File nextFile = firstIterator.next();
-            if (nextFile.isDirectory()) { // if the file is a directory
-                File[] filesInDirectory = nextFile.listFiles(); // get all files in the directory
-                assert filesInDirectory != null;
-                iterators.add(Arrays.asList(filesInDirectory).iterator());
-                addIterators(iterators, Arrays.asList(filesInDirectory).iterator());
+    private void addIterators(Set<Iterator<File>> iterators, File directory) {
+        File[] filesInDirectory = directory.listFiles(); // get all files in the directory
+        assert filesInDirectory != null;
+        iterators.add(Arrays.asList(filesInDirectory).iterator());
+        for (File file : filesInDirectory) { // for each file in the directory
+            if (file.isDirectory()) { // if the file is a directory
+                addIterators(iterators, file);
             }
         }
     }
+
 
 
     private void addFiles(Iterator<File> iterator, List<File> result, int size) {
@@ -65,10 +63,9 @@ public class FileServiceImpl implements FileService {
 
     @Override
     public void reset() {
-        List<File> files = Arrays.asList(Objects.requireNonNull(new File(path).listFiles())); // get all files from the path
+        File rootDirectory = new File(path);
         this.iterators.clear();
-        this.firstIterator = files.iterator();
-        addIterators(iterators, firstIterator);
+        addIterators(iterators, rootDirectory);
         logger.info("Reset iterators.");
     }
 }
