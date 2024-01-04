@@ -36,7 +36,7 @@ public class FileServiceImpl implements FileService {
         iterators.forEach(iterator -> {
             addFiles(iterator, result, size);
         });
-        logger.info("Get next result size: " + result.size());
+        logger.info("Get next result size: " + result.size() + " Iterators count: " + iterators.size());
         return result; // return the result
     }
 

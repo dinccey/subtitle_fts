@@ -41,7 +41,7 @@ public class DataFetchServiceImpl implements DataFetchService {
     public Set<Subtitle> getNextSubtitleData() {
         List<File> nextFiles = fileService.getNext();
         Set<Subtitle> subtitles = new HashSet<>();
-        logger.info("Number of subtitle files for parsing: " + nextFiles.size() + " Sample file name: " + nextFiles.stream().findAny().get().getAbsolutePath());
+        logger.info("Number of subtitle files for parsing: " + nextFiles.size() + " Count of subtitles: " + nextFiles.stream().filter(f->f.getAbsolutePath().endsWith(".vtt")).count());
         nextFiles.forEach(file -> {
             if(file.getAbsolutePath().endsWith(".vtt")){
                 VttObject vttObject;
