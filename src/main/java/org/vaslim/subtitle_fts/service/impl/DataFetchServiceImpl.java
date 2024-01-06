@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.vaslim.subtitle_fts.model.MediaRecord;
 import org.vaslim.subtitle_fts.model.Subtitle;
 import org.vaslim.subtitle_fts.service.DataFetchService;
 import org.vaslim.subtitle_fts.service.FileService;
@@ -17,6 +18,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -38,43 +40,56 @@ public class DataFetchServiceImpl implements DataFetchService {
     }
 
     @Override
-    public Set<Subtitle> getNextSubtitleData() {
+    public Set<MediaRecord> getNextSubtitleData() {
         List<File> nextFiles = fileService.getNext();
         while ((long) nextFiles.size() > 0 && nextFiles.stream().noneMatch(f -> f.getAbsolutePath().endsWith(".vtt"))){
             nextFiles = fileService.getNext();
         }
-        Set<Subtitle> subtitles = new HashSet<>();
+        Set<MediaRecord> mediaRecords = new HashSet<>();
         logger.info("Number of subtitle files for parsing: " + nextFiles.size() + " Count of subtitles: " + nextFiles.stream().filter(f->f.getAbsolutePath().endsWith(".vtt")).count());
         nextFiles.forEach(file -> {
             if(file.getAbsolutePath().endsWith(".vtt")){
+                List<Subtitle> subtitles = new ArrayList<>();
                 VttObject vttObject;
                 try {
                     vttObject = vttParser.parse(new FileInputStream(file));
                 } catch (IOException | SubtitleParsingException e) {
                     throw new RuntimeException(e);
                 }
-
+                MediaRecord mediaRecord = populateMediaRecord(file.getPath());
+                mediaRecords.add(mediaRecord);
                 List<SubtitleCue> subtitleCues = vttObject.getCues();
                 subtitleCues.forEach(subtitleCue -> {
-                    subtitles.add(populateSubtitle(subtitleCue, file.getPath()));
+                    subtitles.add(populateSubtitle(subtitleCue, file.getPath(), mediaRecord.getSubtitlePath()));
                 });
+                mediaRecord.setSubtitles(subtitles);
                 logger.info("Subtitle cues count: " + subtitleCues.size());
             }
         });
 
-        return subtitles;
+        return mediaRecords;
     }
 
-    private Subtitle populateSubtitle(SubtitleCue subtitleCue, String fileName) {
-        Subtitle subtitle = new Subtitle();
-        String videoName = fileName.replaceAll(path,"");
-        if(videoName.startsWith("/")){
-            videoName = videoName.substring(1);
+    private MediaRecord populateMediaRecord(String path) {
+        MediaRecord mediaRecord = new MediaRecord();
+        String subtitlePath = path.replaceAll(this.path,"");
+        if(subtitlePath.startsWith("/")){
+            subtitlePath = subtitlePath.substring(1);
         }
-        subtitle.setVideoName(videoName);
+        mediaRecord.setSubtitlePath(subtitlePath);
+
+        String categoryName = subtitlePath.replaceAll("/", " ").replaceAll("_"," ").replaceAll(".vtt", "");
+        mediaRecord.setCategoryData(categoryName);
+
+        return mediaRecord;
+    }
+
+    private Subtitle populateSubtitle(SubtitleCue subtitleCue, String fileName, String subtitlePath) {
+        Subtitle subtitle = new Subtitle();
+
         subtitle.setText(subtitleCue.getText());
         subtitle.setTimestamp(subtitleCue.getId().substring(0, subtitleCue.getId().indexOf(" ")));
-        subtitle.setId(generateId(subtitle.getVideoName(), subtitle.getText()));
+        subtitle.setId(generateId(subtitlePath, subtitle.getText()));
 
         return subtitle;
     }

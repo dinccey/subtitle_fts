@@ -6,17 +6,11 @@ import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
 
-import java.util.Map;
-
-@Document(indexName = "video")
 public class Subtitle {
 
     @JsonIgnore
     @Id
     private String id;
-
-    @Field(type = FieldType.Text, name = "videoName")
-    private String videoName;
 
     private String timestamp;
 
@@ -30,14 +24,6 @@ public class Subtitle {
 
     public void setId(String id) {
         this.id = id;
-    }
-
-    public String getVideoName() {
-        return videoName;
-    }
-
-    public void setVideoName(String videoName) {
-        this.videoName = videoName;
     }
 
     public String getTimestamp() {
@@ -55,4 +41,5 @@ public class Subtitle {
     public void setText(String text) {
         this.text = text;
     }
+
 }

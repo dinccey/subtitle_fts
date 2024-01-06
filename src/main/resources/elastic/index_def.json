@@ -1,0 +1,29 @@
+{
+  "settings": {
+    "number_of_shards": 1
+  },
+  "mappings": {
+    "properties": {
+      "categoryData": {
+        "type": "text"
+      },
+      "subtitlePath": {
+        "type": "text"
+      },
+      "subtitles": {
+        "type": "nested",
+        "properties": {
+          "id": {
+            "type": "text"
+          },
+          "text": {
+            "type": "text"
+          },
+          "timestamp": {
+            "type": "text"
+          }
+        }
+      }
+    }
+  }
+}
