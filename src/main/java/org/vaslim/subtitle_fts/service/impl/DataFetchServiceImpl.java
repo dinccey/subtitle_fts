@@ -67,14 +67,24 @@ public class DataFetchServiceImpl implements DataFetchService {
 
     private Subtitle populateSubtitle(SubtitleCue subtitleCue, String fileName) {
         Subtitle subtitle = new Subtitle();
-        String videoName = fileName.replaceAll(path,"");
-        if(videoName.startsWith("/")){
-            videoName = videoName.substring(1);
+        String subtitlePath = fileName.replaceAll(path,"");
+        if(subtitlePath.startsWith("/")){
+            subtitlePath = subtitlePath.substring(1);
         }
-        subtitle.setVideoName(videoName);
+        String categoryInfo = subtitlePath
+                .substring(subtitlePath
+                        .indexOf("/"))
+                .substring(subtitlePath
+                        .indexOf("/"))
+                .replaceAll("/", " ")
+                .replaceAll(".vtt","")
+                .replaceAll("_"," ");
+
+        subtitle.setCategoryInfo(categoryInfo);
+        subtitle.setSubtitlePath(subtitlePath);
         subtitle.setText(subtitleCue.getText());
         subtitle.setTimestamp(subtitleCue.getId().substring(0, subtitleCue.getId().indexOf(" ")));
-        subtitle.setId(generateId(subtitle.getVideoName(), subtitle.getText()));
+        subtitle.setId(generateId(subtitle.getSubtitlePath(), subtitle.getText()));
 
         return subtitle;
     }

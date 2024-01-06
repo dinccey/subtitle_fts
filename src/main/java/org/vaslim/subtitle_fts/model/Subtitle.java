@@ -6,8 +6,6 @@ import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
 
-import java.util.Map;
-
 @Document(indexName = "video")
 public class Subtitle {
 
@@ -15,8 +13,9 @@ public class Subtitle {
     @Id
     private String id;
 
-    @Field(type = FieldType.Text, name = "videoName")
-    private String videoName;
+    @Field(type = FieldType.Text, name = "categoryInfo")
+    private String categoryInfo;
+    private String subtitlePath;
 
     private String timestamp;
 
@@ -32,12 +31,12 @@ public class Subtitle {
         this.id = id;
     }
 
-    public String getVideoName() {
-        return videoName;
+    public String getSubtitlePath() {
+        return subtitlePath;
     }
 
-    public void setVideoName(String videoName) {
-        this.videoName = videoName;
+    public void setSubtitlePath(String subtitlePath) {
+        this.subtitlePath = subtitlePath;
     }
 
     public String getTimestamp() {
@@ -54,5 +53,13 @@ public class Subtitle {
 
     public void setText(String text) {
         this.text = text;
+    }
+
+    public String getCategoryInfo() {
+        return categoryInfo;
+    }
+
+    public void setCategoryInfo(String categoryInfo) {
+        this.categoryInfo = categoryInfo;
     }
 }
