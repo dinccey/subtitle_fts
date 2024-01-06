@@ -74,8 +74,6 @@ public class DataFetchServiceImpl implements DataFetchService {
         String categoryInfo = subtitlePath
                 .substring(subtitlePath
                         .indexOf("/"))
-                .substring(subtitlePath
-                        .indexOf("/"))
                 .replaceAll("/", " ")
                 .replaceAll(".vtt","")
                 .replaceAll("_"," ");
