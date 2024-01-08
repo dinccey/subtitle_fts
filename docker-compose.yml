@@ -47,7 +47,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 3G
+          memory: 5G
     #healthcheck:
     #  test: [ "CMD", "curl", "-f", "http://localhost:9200" ]
     #  interval: 30s
