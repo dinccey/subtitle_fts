@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.vaslim.subtitle_fts.model.CategoryInfo;
 import org.vaslim.subtitle_fts.model.Subtitle;
 import org.vaslim.subtitle_fts.service.DataFetchService;
 import org.vaslim.subtitle_fts.service.FileService;
@@ -32,6 +33,12 @@ public class DataFetchServiceImpl implements DataFetchService {
     @Value("${files.path.root}")
     private String path;
 
+    @Value("${category_info_index.file.extension}")
+    private String categoryInfoIndexFileExtension;
+
+    @Value("${subtitle_index.file.extension}")
+    private String subtitleIndexFileExtension;
+
     public DataFetchServiceImpl(FileService fileService, VttParser vttParser) {
         this.fileService = fileService;
         this.vttParser = vttParser;
@@ -40,13 +47,13 @@ public class DataFetchServiceImpl implements DataFetchService {
     @Override
     public Set<Subtitle> getNextSubtitleData() {
         List<File> nextFiles = fileService.getNext();
-        while ((long) nextFiles.size() > 0 && nextFiles.stream().noneMatch(f -> f.getAbsolutePath().endsWith(".vtt"))){
+        while ((long) nextFiles.size() > 0 && nextFiles.stream().noneMatch(f -> f.getAbsolutePath().endsWith(subtitleIndexFileExtension))){
             nextFiles = fileService.getNext();
         }
         Set<Subtitle> subtitles = new HashSet<>();
         logger.info("Number of subtitle files for parsing: " + nextFiles.size() + " Count of subtitles: " + nextFiles.stream().filter(f->f.getAbsolutePath().endsWith(".vtt")).count());
         nextFiles.forEach(file -> {
-            if(file.getAbsolutePath().endsWith(".vtt")){
+            if(file.getAbsolutePath().endsWith(subtitleIndexFileExtension)){
                 VttObject vttObject;
                 try {
                     vttObject = vttParser.parse(new FileInputStream(file));
@@ -65,18 +72,27 @@ public class DataFetchServiceImpl implements DataFetchService {
         return subtitles;
     }
 
+    @Override
+    public Set<CategoryInfo> getNextCategoryInfoData() {
+        List<File> nextFiles = fileService.getNext();
+        while ((long) nextFiles.size() > 0 && nextFiles.stream().noneMatch(f -> f.getAbsolutePath().endsWith(categoryInfoIndexFileExtension))){
+            nextFiles = fileService.getNext();
+        }
+
+        Set<CategoryInfo> categoryInfos = new HashSet<>();
+        nextFiles.forEach(file -> {
+            if(file.getAbsolutePath().endsWith(categoryInfoIndexFileExtension)) {
+                categoryInfos.add(populateCategoryInfo(file.getPath()));
+            }
+        });
+
+        return categoryInfos;
+    }
+
     private Subtitle populateSubtitle(SubtitleCue subtitleCue, String fileName) {
         Subtitle subtitle = new Subtitle();
-        String subtitlePath = fileName.replaceAll(path,"");
-        if(subtitlePath.startsWith("/")){
-            subtitlePath = subtitlePath.substring(1);
-        }
-        String categoryInfo = subtitlePath
-                .substring(subtitlePath
-                        .indexOf("/"))
-                .replaceAll("/", " ")
-                .replaceAll(".vtt","")
-                .replaceAll("_"," ");
+        String subtitlePath = getPath(fileName);
+        String categoryInfo = getCategoryInfo(subtitlePath);
 
         subtitle.setCategoryInfo(categoryInfo);
         subtitle.setSubtitlePath(subtitlePath);
@@ -85,6 +101,30 @@ public class DataFetchServiceImpl implements DataFetchService {
         subtitle.setId(generateId(subtitle.getSubtitlePath(), subtitle.getText()));
 
         return subtitle;
+    }
+
+    private CategoryInfo populateCategoryInfo(String filename){
+        CategoryInfo categoryInfo = new CategoryInfo();
+        categoryInfo.setCategoryInfo(getCategoryInfo(getPath(filename)));
+        categoryInfo.setSubtitlePath(getPath(filename));
+        categoryInfo.setId(getPath(filename).replaceAll(categoryInfoIndexFileExtension,subtitleIndexFileExtension));
+        return categoryInfo;
+    }
+
+    private String getPath(String fileName) {
+        String subtitlePath = fileName.replaceAll(path,"");
+        if(subtitlePath.startsWith("/")){
+            subtitlePath = subtitlePath.substring(1);
+        }
+        return subtitlePath;
+    }
+
+    private String getCategoryInfo(String subtitlePath) {
+        String categoryInfo = subtitlePath
+                .replaceAll("/", " ")
+                .replaceAll(".vtt","")
+                .replaceAll("_"," ");
+        return categoryInfo;
     }
 
     public String generateId(String title, String text) {

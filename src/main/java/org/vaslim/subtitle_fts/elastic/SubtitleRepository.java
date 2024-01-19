@@ -17,6 +17,5 @@ public interface SubtitleRepository extends ElasticsearchRepository<Subtitle, St
     List<Subtitle> findByTextAndCategoryInfo(String query, String categoryInfoQuery);
     List<Subtitle> findByText(String query);
 
-    List<Subtitle> findByCategoryInfo(String categoryInfoQuery);
 }
 
