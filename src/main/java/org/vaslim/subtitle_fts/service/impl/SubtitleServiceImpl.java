@@ -26,8 +26,13 @@ public class SubtitleServiceImpl implements SubtitleService {
 
     @Override
     public List<MediaRecordDTO> findVideosByTitleOrSubtitleContentExact(String query, String categoryInfo) {
-        List<Subtitle> subtitlesResponse = subtitleRepository.findByTextAndCategoryInfo(query, categoryInfo);
-        return prepareElasticResponse(subtitlesResponse);
+        if(query.isEmpty()){
+            return prepareElasticResponse(subtitleRepository.findByCategoryInfo(categoryInfo));
+        }
+        if(categoryInfo.isEmpty()){
+            return prepareElasticResponse(subtitleRepository.findByText(query));
+        }
+        return prepareElasticResponse(subtitleRepository.findByTextAndCategoryInfo(query, categoryInfo));
     }
 
     private List<MediaRecordDTO> prepareElasticResponse(List<Subtitle> subtitlesResponse) {
