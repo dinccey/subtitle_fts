@@ -14,8 +14,9 @@ public interface SubtitleRepository extends ElasticsearchRepository<Subtitle, St
             "{\"match_phrase\": {\"videoName\": {\"query\": \"?0\", \"boost\": 3}}}]}}")
     List<Subtitle> findByTextOrVideoName(String query);
 
+    List<Subtitle> findByTextAndCategoryInfo(String query, String categoryInfoQuery);
     List<Subtitle> findByText(String query);
 
-    List<Subtitle> findByTextAndCategoryInfo(String query, String categoryInfo);
+    List<Subtitle> findByCategoryInfo(String categoryInfoQuery);
 }
 
