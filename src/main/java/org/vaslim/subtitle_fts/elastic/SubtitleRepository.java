@@ -1,4 +1,4 @@
-package org.vaslim.subtitle_fts.repository;
+package org.vaslim.subtitle_fts.elastic;
 
 import org.springframework.data.elasticsearch.annotations.Query;
 import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;
