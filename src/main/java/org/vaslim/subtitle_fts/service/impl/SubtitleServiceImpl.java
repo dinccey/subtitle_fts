@@ -4,7 +4,7 @@ import org.springframework.stereotype.Service;
 import org.vaslim.subtitle_fts.dto.MediaRecordDTO;
 import org.vaslim.subtitle_fts.dto.SubtitleDTO;
 import org.vaslim.subtitle_fts.model.Subtitle;
-import org.vaslim.subtitle_fts.repository.SubtitleRepository;
+import org.vaslim.subtitle_fts.elastic.SubtitleRepository;
 import org.vaslim.subtitle_fts.service.SubtitleService;
 
 import java.util.*;

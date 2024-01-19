@@ -8,7 +8,7 @@ import org.springframework.data.elasticsearch.client.elc.ElasticsearchTemplate;
 import org.springframework.data.elasticsearch.core.mapping.IndexCoordinates;
 import org.springframework.stereotype.Service;
 import org.vaslim.subtitle_fts.model.Subtitle;
-import org.vaslim.subtitle_fts.repository.SubtitleRepository;
+import org.vaslim.subtitle_fts.elastic.SubtitleRepository;
 import org.vaslim.subtitle_fts.service.DataFetchService;
 import org.vaslim.subtitle_fts.service.FileService;
 import org.vaslim.subtitle_fts.service.IndexService;
