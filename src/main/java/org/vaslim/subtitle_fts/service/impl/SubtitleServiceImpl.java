@@ -3,6 +3,8 @@ package org.vaslim.subtitle_fts.service.impl;
 import org.springframework.stereotype.Service;
 import org.vaslim.subtitle_fts.dto.MediaRecordDTO;
 import org.vaslim.subtitle_fts.dto.SubtitleDTO;
+import org.vaslim.subtitle_fts.elastic.CategoryInfoRepository;
+import org.vaslim.subtitle_fts.model.CategoryInfo;
 import org.vaslim.subtitle_fts.model.Subtitle;
 import org.vaslim.subtitle_fts.elastic.SubtitleRepository;
 import org.vaslim.subtitle_fts.service.SubtitleService;
@@ -14,8 +16,11 @@ public class SubtitleServiceImpl implements SubtitleService {
 
     private final SubtitleRepository subtitleRepository;
 
-    public SubtitleServiceImpl(SubtitleRepository subtitleRepository) {
+    private final CategoryInfoRepository categoryInfoRepository;
+
+    public SubtitleServiceImpl(SubtitleRepository subtitleRepository, CategoryInfoRepository categoryInfoRepository) {
         this.subtitleRepository = subtitleRepository;
+        this.categoryInfoRepository = categoryInfoRepository;
     }
 
     @Override
@@ -26,13 +31,30 @@ public class SubtitleServiceImpl implements SubtitleService {
 
     @Override
     public List<MediaRecordDTO> findVideosByTitleOrSubtitleContentExact(String query, String categoryInfo) {
-        if(query.isEmpty()){
-            return prepareElasticResponse(subtitleRepository.findByCategoryInfo(categoryInfo));
+        if(query.trim().isBlank()){
+            return prepareElasticResponseCategory(categoryInfoRepository.findAllByCategoryInfo(categoryInfo));
         }
-        if(categoryInfo.isEmpty()){
+        if(categoryInfo.trim().isBlank()){
             return prepareElasticResponse(subtitleRepository.findByText(query));
         }
         return prepareElasticResponse(subtitleRepository.findByTextAndCategoryInfo(query, categoryInfo));
+    }
+
+    private List<MediaRecordDTO> prepareElasticResponseCategory(List<CategoryInfo> subtitlesResponse) {
+        Set<MediaRecordDTO> mediaRecordDTOS = new LinkedHashSet<>();
+        subtitlesResponse.forEach(categoryInfo -> {
+            mediaRecordDTOS.add(populateNewMediaRecordFromCategoryInfo(categoryInfo));
+        });
+
+        return new ArrayList<>(mediaRecordDTOS);
+    }
+
+    private MediaRecordDTO populateNewMediaRecordFromCategoryInfo(CategoryInfo categoryInfo) {
+        MediaRecordDTO mediaRecordDTO = new MediaRecordDTO();
+        mediaRecordDTO.setSubtitlePath(categoryInfo.getSubtitlePath());
+        mediaRecordDTO.setCategoryInfo(categoryInfo.getCategoryInfo());
+
+        return mediaRecordDTO;
     }
 
     private List<MediaRecordDTO> prepareElasticResponse(List<Subtitle> subtitlesResponse) {

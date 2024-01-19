@@ -5,8 +5,9 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
+import org.vaslim.subtitle_fts.constants.Constants;
 
-@Document(indexName = "video")
+@Document(indexName = Constants.INDEX_SUBTITLES)
 public class Subtitle {
 
     @JsonIgnore
