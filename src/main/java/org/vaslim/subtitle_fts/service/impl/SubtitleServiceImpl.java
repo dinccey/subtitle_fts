@@ -24,23 +24,23 @@ public class SubtitleServiceImpl implements SubtitleService {
     }
 
     @Override
-    public List<MediaRecordDTO> findVideosByTitleOrSubtitleContentFuzzy(String query) {
+    public List<MediaRecordDTO> findVideosByTitleOrSubtitleContentFuzzy(String query, Integer maxResults) {
         List<Subtitle> subtitlesResponse = subtitleRepository.findByTextOrVideoName(query);
-        return prepareElasticResponse(subtitlesResponse);
+        return prepareElasticResponse(subtitlesResponse, maxResults);
     }
 
     @Override
-    public List<MediaRecordDTO> findVideosByTitleOrSubtitleContentExact(String query, String categoryInfo) {
+    public List<MediaRecordDTO> findVideosByTitleOrSubtitleContentExact(String query, String categoryInfo, Integer maxResults) {
         if(query.trim().isBlank()){
-            return prepareElasticResponseCategory(categoryInfoRepository.findAllByCategoryInfo(categoryInfo));
+            return prepareElasticResponseCategory(categoryInfoRepository.findAllByCategoryInfo(categoryInfo), maxResults);
         }
         if(categoryInfo.trim().isBlank()){
-            return prepareElasticResponse(subtitleRepository.findByText(query));
+            return prepareElasticResponse(subtitleRepository.findByText(query), maxResults);
         }
-        return prepareElasticResponse(subtitleRepository.findByTextAndCategoryInfo(query, categoryInfo));
+        return prepareElasticResponse(subtitleRepository.findByTextAndCategoryInfo(query, categoryInfo), maxResults);
     }
 
-    private List<MediaRecordDTO> prepareElasticResponseCategory(List<CategoryInfo> subtitlesResponse) {
+    private List<MediaRecordDTO> prepareElasticResponseCategory(List<CategoryInfo> subtitlesResponse, Integer maxResults) {
         Set<MediaRecordDTO> mediaRecordDTOS = new LinkedHashSet<>();
         subtitlesResponse.forEach(categoryInfo -> {
             mediaRecordDTOS.add(populateNewMediaRecordFromCategoryInfo(categoryInfo));
@@ -57,13 +57,17 @@ public class SubtitleServiceImpl implements SubtitleService {
         return mediaRecordDTO;
     }
 
-    private List<MediaRecordDTO> prepareElasticResponse(List<Subtitle> subtitlesResponse) {
+    private List<MediaRecordDTO> prepareElasticResponse(List<Subtitle> subtitlesResponse, Integer maxResults) {
         Set<MediaRecordDTO> mediaRecordDTOS = new LinkedHashSet<>();
         subtitlesResponse.forEach(subtitle -> {
             Optional<MediaRecordDTO> mediaRecordDTO = mediaRecordDTOS.stream().filter(mr -> mr.getSubtitlePath() != null && mr.getSubtitlePath().equals(subtitle.getSubtitlePath())).findFirst();
             mediaRecordDTO.ifPresentOrElse(
                     recordDTO -> recordDTO.addSubtitle(mapToSubtitleDTO(subtitle)), () -> mediaRecordDTOS.add(populateNewMediaRecord(subtitle))
             );
+        });
+
+        mediaRecordDTOS.forEach(mediaRecordDTO -> {
+            mediaRecordDTO.getSubtitles().sort((a, b) -> (int) (a.getTimestamp() - b.getTimestamp()));
         });
 
         List<MediaRecordDTO> mediaRecordDTOList = new ArrayList<>(mediaRecordDTOS);

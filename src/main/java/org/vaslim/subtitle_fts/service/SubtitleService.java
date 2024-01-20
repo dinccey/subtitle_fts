@@ -9,7 +9,7 @@ import java.util.Set;
 
 @Service
 public interface SubtitleService {
-    List<MediaRecordDTO> findVideosByTitleOrSubtitleContentFuzzy(String query);
+    List<MediaRecordDTO> findVideosByTitleOrSubtitleContentFuzzy(String query, Integer maxResults);
 
-    List<MediaRecordDTO> findVideosByTitleOrSubtitleContentExact(String query, String categoryInfo);
+    List<MediaRecordDTO> findVideosByTitleOrSubtitleContentExact(String query, String categoryInfo, Integer maxResults);
 }

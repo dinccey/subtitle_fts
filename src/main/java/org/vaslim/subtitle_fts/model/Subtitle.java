@@ -18,7 +18,7 @@ public class Subtitle {
     private String categoryInfo;
     private String subtitlePath;
 
-    private String timestamp;
+    private double timestamp;
 
     @Field(type = FieldType.Text, name = "text")
     private String text;
@@ -40,11 +40,11 @@ public class Subtitle {
         this.subtitlePath = subtitlePath;
     }
 
-    public String getTimestamp() {
+    public double getTimestamp() {
         return timestamp;
     }
 
-    public void setTimestamp(String timestamp) {
+    public void setTimestamp(double timestamp) {
         this.timestamp = timestamp;
     }
 
