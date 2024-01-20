@@ -49,7 +49,7 @@ public class IndexServiceImpl implements IndexService {
         try {
             long startTime = System.currentTimeMillis();
             while (!(subtitles = dataFetchService.getNextSubtitleData()).isEmpty()) {
-                logger.info("Indexing batch size " + subtitles.size());
+                //logger.info("Indexing batch size " + subtitles.size());
                 subtitleRepository.saveAll(subtitles);
             }
             long endTime = System.currentTimeMillis();
@@ -57,7 +57,7 @@ public class IndexServiceImpl implements IndexService {
             fileService.reset(); //reset iterator
             startTime = System.currentTimeMillis();
             while (!(categoryInfos = dataFetchService.getNextCategoryInfoData()).isEmpty()){
-                logger.info("Indexing categoryInfo batch size: " + categoryInfos.size());
+                //logger.info("Indexing categoryInfo batch size: " + categoryInfos.size());
                 categoryInfoRepository.saveAll(categoryInfos);
             }
             endTime = System.currentTimeMillis();
