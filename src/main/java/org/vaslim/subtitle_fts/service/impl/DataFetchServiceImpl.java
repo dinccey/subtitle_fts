@@ -51,7 +51,7 @@ public class DataFetchServiceImpl implements DataFetchService {
             nextFiles = fileService.getNext();
         }
         Set<Subtitle> subtitles = new HashSet<>();
-        logger.info("Number of subtitle files for parsing: " + nextFiles.size() + " Count of subtitles: " + nextFiles.stream().filter(f->f.getAbsolutePath().endsWith(".vtt")).count());
+        //logger.info("Number of subtitle files for parsing: " + nextFiles.size() + " Count of subtitles: " + nextFiles.stream().filter(f->f.getAbsolutePath().endsWith(".vtt")).count());
         nextFiles.forEach(file -> {
             if(file.getAbsolutePath().endsWith(subtitleIndexFileExtension)){
                 VttObject vttObject;
@@ -65,7 +65,7 @@ public class DataFetchServiceImpl implements DataFetchService {
                 subtitleCues.forEach(subtitleCue -> {
                     subtitles.add(populateSubtitle(subtitleCue, file.getPath()));
                 });
-                logger.info("Subtitle cues count: " + subtitleCues.size());
+                //logger.info("Subtitle cues count: " + subtitleCues.size());
             }
         });
 
