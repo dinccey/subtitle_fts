@@ -1,5 +1,7 @@
 package org.vaslim.subtitle_fts.service.impl;
 
+import org.springdoc.core.converters.models.Pageable;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.vaslim.subtitle_fts.dto.MediaRecordDTO;
 import org.vaslim.subtitle_fts.dto.SubtitleDTO;
@@ -18,6 +20,7 @@ public class SubtitleServiceImpl implements SubtitleService {
 
     private final CategoryInfoRepository categoryInfoRepository;
 
+
     public SubtitleServiceImpl(SubtitleRepository subtitleRepository, CategoryInfoRepository categoryInfoRepository) {
         this.subtitleRepository = subtitleRepository;
         this.categoryInfoRepository = categoryInfoRepository;
@@ -32,12 +35,12 @@ public class SubtitleServiceImpl implements SubtitleService {
     @Override
     public List<MediaRecordDTO> findVideosByTitleOrSubtitleContentExact(String query, String categoryInfo, Integer maxResults) {
         if(query.trim().isBlank()){
-            return prepareElasticResponseCategory(categoryInfoRepository.findAllByCategoryInfo(categoryInfo), maxResults);
+            return prepareElasticResponseCategory(categoryInfoRepository.findAllByCategoryInfo(categoryInfo, PageRequest.of(0,maxResults)), maxResults);
         }
         if(categoryInfo.trim().isBlank()){
-            return prepareElasticResponse(subtitleRepository.findByText(query), maxResults);
+            return prepareElasticResponse(subtitleRepository.findByText(query, PageRequest.of(0,maxResults)), maxResults);
         }
-        return prepareElasticResponse(subtitleRepository.findByTextAndCategoryInfo(query, categoryInfo), maxResults);
+        return prepareElasticResponse(subtitleRepository.findByTextAndCategoryInfo(query, categoryInfo, PageRequest.of(0,maxResults)), maxResults);
     }
 
     private List<MediaRecordDTO> prepareElasticResponseCategory(List<CategoryInfo> subtitlesResponse, Integer maxResults) {
