@@ -1,5 +1,6 @@
 package org.vaslim.subtitle_fts.dto;
 
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -8,7 +9,7 @@ public class MediaRecordDTO {
     private String categoryInfo;
     private String subtitlePath;
 
-    private Set<SubtitleDTO> subtitles = new LinkedHashSet<>();
+    private List<SubtitleDTO> subtitles = new ArrayList<>();
 
     public String getCategoryInfo() {
         return categoryInfo;
@@ -26,11 +27,11 @@ public class MediaRecordDTO {
         this.subtitlePath = subtitlePath;
     }
 
-    public Set<SubtitleDTO> getSubtitles() {
+    public List<SubtitleDTO> getSubtitles() {
         return subtitles;
     }
 
-    public void setSubtitles(Set<SubtitleDTO> subtitles) {
+    public void setSubtitles(List<SubtitleDTO> subtitles) {
         this.subtitles = subtitles;
     }
 

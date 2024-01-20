@@ -97,7 +97,7 @@ public class DataFetchServiceImpl implements DataFetchService {
         subtitle.setCategoryInfo(categoryInfo);
         subtitle.setSubtitlePath(subtitlePath);
         subtitle.setText(subtitleCue.getText());
-        subtitle.setTimestamp(subtitleCue.getId().substring(0, subtitleCue.getId().indexOf(" ")));
+        subtitle.setTimestamp(convertTimestampToSeconds(subtitleCue.getId().substring(0, subtitleCue.getId().indexOf(" "))));
         subtitle.setId(generateId(subtitle.getSubtitlePath(), subtitle.getText()));
 
         return subtitle;
@@ -126,6 +126,32 @@ public class DataFetchServiceImpl implements DataFetchService {
                 .replaceAll("_"," ");
         return categoryInfo;
     }
+
+    public double convertTimestampToSeconds(String timestamp) {
+        String[] parts = timestamp.split(":");
+        double hours = 0;
+        double minutes = 0;
+        double seconds = 0;
+
+        if (parts.length == 3) {
+            // Timestamp is in the format HH:MM:SS.sss
+            hours = Double.parseDouble(parts[0]);
+            minutes = Double.parseDouble(parts[1]);
+            seconds = Double.parseDouble(parts[2]);
+        } else if (parts.length == 2) {
+            // Timestamp is in the format MM:SS.sss
+            minutes = Double.parseDouble(parts[0]);
+            seconds = Double.parseDouble(parts[1]);
+        } else if (parts.length == 1) {
+            // Timestamp is in the format SS.sss
+            seconds = Double.parseDouble(parts[0]);
+        } else {
+            throw new IllegalArgumentException("Invalid timestamp format: " + timestamp);
+        }
+
+        return hours * 3600 + minutes * 60 + seconds;
+    }
+
 
     public String generateId(String title, String text) {
         try {

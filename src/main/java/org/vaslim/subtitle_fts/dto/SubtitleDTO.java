@@ -2,15 +2,15 @@ package org.vaslim.subtitle_fts.dto;
 
 public class SubtitleDTO {
 
-    private String timestamp;
+    private double timestamp;
     private String text;
 
 
-    public String getTimestamp() {
+    public double getTimestamp() {
         return timestamp;
     }
 
-    public void setTimestamp(String timestamp) {
+    public void setTimestamp(double timestamp) {
         this.timestamp = timestamp;
     }
 
