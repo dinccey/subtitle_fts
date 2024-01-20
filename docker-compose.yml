@@ -16,7 +16,8 @@ services:
       - FILES_ITERATION_SIZE=${FILES_ITERATION_SIZE} #number of files to index at once, lower values use less memory, higher values increase performance
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
       - JWT_SECRET=${JWT_SECRET} #change this
-    restart: on-failure
+      - CATEGORY_INFO_INDEX_FILE_EXTENSION=${CATEGORY_INFO_INDEX_FILE_EXTENSION} #file extension used to index videos for information, can be .mp4, .vtt or something else if needed, parses path for info
+    restart: always
     #depends_on:
       #elasticsearch:
         #condition: service_healthy
