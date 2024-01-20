@@ -47,15 +47,21 @@ public class IndexServiceImpl implements IndexService {
         Set<Subtitle> subtitles;
         Set<CategoryInfo> categoryInfos;
         try {
+            long startTime = System.currentTimeMillis();
             while (!(subtitles = dataFetchService.getNextSubtitleData()).isEmpty()) {
                 logger.info("Indexing batch size " + subtitles.size());
                 subtitleRepository.saveAll(subtitles);
             }
+            long endTime = System.currentTimeMillis();
+            logger.info("Subtitle indexing time seconds: " + (endTime - startTime) / 1000);
             fileService.reset(); //reset iterator
+            startTime = System.currentTimeMillis();
             while (!(categoryInfos = dataFetchService.getNextCategoryInfoData()).isEmpty()){
                 logger.info("Indexing categoryInfo batch size: " + categoryInfos.size());
                 categoryInfoRepository.saveAll(categoryInfos);
             }
+            endTime = System.currentTimeMillis();
+            logger.info("CategoryInfo indexing time seconds: " + (endTime - startTime) / 1000);
         } finally {
             fileService.reset(); //reset iterator
         }
