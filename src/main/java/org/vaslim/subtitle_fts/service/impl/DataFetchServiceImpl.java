@@ -107,7 +107,7 @@ public class DataFetchServiceImpl implements DataFetchService {
         CategoryInfo categoryInfo = new CategoryInfo();
         categoryInfo.setCategoryInfo(getCategoryInfo(getPath(filename)));
         categoryInfo.setSubtitlePath(getPath(filename));
-        categoryInfo.setId(getPath(filename).replaceAll(categoryInfoIndexFileExtension,subtitleIndexFileExtension));
+        categoryInfo.setId(getPath(filename).replaceAll(categoryInfoIndexFileExtension,"").replaceAll(subtitleIndexFileExtension,""));
         return categoryInfo;
     }
 
@@ -122,7 +122,7 @@ public class DataFetchServiceImpl implements DataFetchService {
     private String getCategoryInfo(String subtitlePath) {
         String categoryInfo = subtitlePath
                 .replaceAll("/", " ")
-                .replaceAll(".vtt","")
+                .replaceAll(categoryInfoIndexFileExtension,"")
                 .replaceAll("_"," ");
         return categoryInfo;
     }
