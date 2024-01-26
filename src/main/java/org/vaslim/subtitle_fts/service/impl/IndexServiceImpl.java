@@ -55,8 +55,8 @@ public class IndexServiceImpl implements IndexService {
         Set<Subtitle> subtitles;
         Set<CategoryInfo> categoryInfos;
         logger.info("Starting indexing...");
-        createIndexIfNotExists(Constants.INDEX_SUBTITLES, getMappingsSubtitle());
-        createIndexIfNotExists(Constants.INDEX_CATEGORY_INFO, getMappingsCategoryInfo());
+        //createIndexIfNotExists(Constants.INDEX_SUBTITLES, getMappingsSubtitle());
+        //createIndexIfNotExists(Constants.INDEX_CATEGORY_INFO, getMappingsCategoryInfo());
         try {
             long startTime = System.currentTimeMillis();
             while (!(subtitles = dataFetchService.getNextSubtitleData()).isEmpty()) {
