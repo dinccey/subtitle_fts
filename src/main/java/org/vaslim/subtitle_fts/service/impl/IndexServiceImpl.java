@@ -54,6 +54,7 @@ public class IndexServiceImpl implements IndexService {
     public void runIndexing() {
         Set<Subtitle> subtitles;
         Set<CategoryInfo> categoryInfos;
+        logger.info("Starting indexing...");
         createIndexIfNotExists(Constants.INDEX_SUBTITLES, getMappingsSubtitle());
         createIndexIfNotExists(Constants.INDEX_CATEGORY_INFO, getMappingsCategoryInfo());
         try {
