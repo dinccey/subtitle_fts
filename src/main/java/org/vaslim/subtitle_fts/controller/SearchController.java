@@ -20,12 +20,12 @@ public class SearchController {
     }
 
     @GetMapping("/fuzzy")
-    public ResponseEntity<List<MediaRecordDTO>> getVideoByQueryFuzzy(@RequestParam(name = "maxResults", defaultValue = "300") Integer maxResults, @RequestParam String query){
+    public ResponseEntity<List<MediaRecordDTO>> getVideoByQueryFuzzy(@RequestParam(name = "maxResults", defaultValue = "600") Integer maxResults, @RequestParam String query){
         return ResponseEntity.ok(subtitleService.findVideosByTitleOrSubtitleContentFuzzy(query, maxResults));
     }
 
     @GetMapping("/exact")
-    public ResponseEntity<List<MediaRecordDTO>> getVideoByQueryExact(@RequestParam(name = "maxResults", defaultValue = "300") Integer maxResults,@RequestParam(name = "query") String query, @RequestParam("categoryInfo") String categoryInfo){
+    public ResponseEntity<List<MediaRecordDTO>> getVideoByQueryExact(@RequestParam(name = "maxResults", defaultValue = "600") Integer maxResults,@RequestParam(name = "query") String query, @RequestParam("categoryInfo") String categoryInfo){
         return ResponseEntity.ok(subtitleService.findVideosByTitleOrSubtitleContentExact(query, categoryInfo, maxResults));
     }
 }
