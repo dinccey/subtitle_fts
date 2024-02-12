@@ -1,13 +1,12 @@
 package org.vaslim.subtitle_fts.service.impl;
 
-import org.springdoc.core.converters.models.Pageable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.vaslim.subtitle_fts.dto.MediaRecordDTO;
 import org.vaslim.subtitle_fts.dto.SubtitleDTO;
 import org.vaslim.subtitle_fts.elastic.CategoryInfoRepository;
-import org.vaslim.subtitle_fts.model.CategoryInfo;
-import org.vaslim.subtitle_fts.model.Subtitle;
+import org.vaslim.subtitle_fts.model.elastic.CategoryInfo;
+import org.vaslim.subtitle_fts.model.elastic.Subtitle;
 import org.vaslim.subtitle_fts.elastic.SubtitleRepository;
 import org.vaslim.subtitle_fts.service.SubtitleService;
 

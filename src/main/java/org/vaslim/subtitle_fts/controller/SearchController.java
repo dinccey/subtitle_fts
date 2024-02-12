@@ -3,11 +3,9 @@ package org.vaslim.subtitle_fts.controller;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.vaslim.subtitle_fts.dto.MediaRecordDTO;
-import org.vaslim.subtitle_fts.model.Subtitle;
 import org.vaslim.subtitle_fts.service.SubtitleService;
 
 import java.util.List;
-import java.util.Set;
 
 @RestController
 @RequestMapping("api/v1/search")
