@@ -2,7 +2,7 @@ package org.vaslim.subtitle_fts.elastic;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;
-import org.vaslim.subtitle_fts.model.CategoryInfo;
+import org.vaslim.subtitle_fts.model.elastic.CategoryInfo;
 
 import java.util.List;
 

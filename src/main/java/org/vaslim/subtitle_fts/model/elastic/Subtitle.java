@@ -1,4 +1,4 @@
-package org.vaslim.subtitle_fts.model;
+package org.vaslim.subtitle_fts.model.elastic;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.springframework.data.annotation.Id;

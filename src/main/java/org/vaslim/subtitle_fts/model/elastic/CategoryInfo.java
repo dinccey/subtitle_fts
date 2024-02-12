@@ -1,4 +1,4 @@
-package org.vaslim.subtitle_fts.model;
+package org.vaslim.subtitle_fts.model.elastic;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.Document;
