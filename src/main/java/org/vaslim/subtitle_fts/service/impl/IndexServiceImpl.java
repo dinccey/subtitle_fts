@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.vaslim.subtitle_fts.constants.Constants;
 import org.vaslim.subtitle_fts.database.IndexFileCategoryRepository;
 import org.vaslim.subtitle_fts.database.IndexFileRepository;
+import org.vaslim.subtitle_fts.database.IndexItemRepository;
 import org.vaslim.subtitle_fts.elastic.CategoryInfoRepository;
 import org.vaslim.subtitle_fts.elastic.SubtitleRepository;
 import org.vaslim.subtitle_fts.exception.SubtitleFtsException;
@@ -58,6 +59,8 @@ public class IndexServiceImpl implements IndexService {
 
     private final IndexFileCategoryRepository indexFileCategoryRepository;
 
+    private final IndexItemRepository indexItemRepository;
+
     @Value("${files.path.root}")
     private String path;
 
@@ -67,7 +70,7 @@ public class IndexServiceImpl implements IndexService {
     @Value("${subtitle_index.file.extension}")
     private String subtitleIndexFileExtension;
 
-    public IndexServiceImpl(ElasticsearchClient elasticsearchClient, ElasticsearchOperations elasticsearchOperations, ElasticsearchTransport elasticsearchTransport, FileService fileService, SubtitleRepository subtitleRepository, CategoryInfoRepository categoryInfoRepository, VttParser vttParser, IndexFileRepository indexFileRepository, IndexFileCategoryRepository indexFileCategoryRepository) {
+    public IndexServiceImpl(ElasticsearchClient elasticsearchClient, ElasticsearchOperations elasticsearchOperations, ElasticsearchTransport elasticsearchTransport, FileService fileService, SubtitleRepository subtitleRepository, CategoryInfoRepository categoryInfoRepository, VttParser vttParser, IndexFileRepository indexFileRepository, IndexFileCategoryRepository indexFileCategoryRepository, IndexItemRepository indexItemRepository) {
         this.elasticsearchClient = elasticsearchClient;
         this.elasticsearchOperations = elasticsearchOperations;
         this.elasticsearchTransport = elasticsearchTransport;
@@ -77,6 +80,7 @@ public class IndexServiceImpl implements IndexService {
         this.vttParser = vttParser;
         this.indexFileRepository = indexFileRepository;
         this.indexFileCategoryRepository = indexFileCategoryRepository;
+        this.indexItemRepository = indexItemRepository;
     }
 
     @Override
@@ -411,6 +415,10 @@ public class IndexServiceImpl implements IndexService {
         if (indexOpsCategoryInfo.exists()) {
             indexOpsCategoryInfo.delete();
         }
+
+        indexFileRepository.deleteAll();
+        indexFileCategoryRepository.deleteAll();
+        indexItemRepository.deleteAll();
     }
 
 }
