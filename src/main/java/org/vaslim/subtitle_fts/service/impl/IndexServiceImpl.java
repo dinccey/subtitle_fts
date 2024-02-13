@@ -87,78 +87,93 @@ public class IndexServiceImpl implements IndexService {
         //createIndexIfNotExists(Constants.INDEX_CATEGORY_INFO, getMappingsCategoryInfo());
         try {
             long startTime = System.currentTimeMillis();
-            while(!(files = fileService.getNext()).isEmpty()){
-                files.forEach(file -> {
-                    Set<Subtitle> subtitles = new HashSet<>();
-                    if(file.getAbsolutePath().endsWith(subtitleIndexFileExtension)){
-                        IndexFile indexFile;
-                        try {
-                            indexFile = indexFileRepository.save(saveFileInDb(file));
-                        } catch (IOException | NoSuchAlgorithmException e) {
-                            throw new RuntimeException(e);
-                        }
-
-                        VttObject vttObject;
-                        try {
-                            vttObject = vttParser.parse(new FileInputStream(file));
-                        } catch (IOException | SubtitleParsingException e) {
-                            throw new RuntimeException(e);
-                        }
-                        if(indexFile.isFileChanged() || indexFile.isFileDeleted()){
-                            subtitleRepository.deleteAll(indexItemsToSubtitles(indexFile.getIndexItems()));
-                        }
-                        Set<IndexItem> indexItems = new HashSet<>();
-                        List<SubtitleCue> subtitleCues = vttObject.getCues();
-                        subtitleCues.forEach(subtitleCue -> {
-                            Subtitle subtitle = populateSubtitle(subtitleCue, file.getPath());
-                            IndexItem indexItem = new IndexItem();
-                            indexItem.setIndexFile(indexFile);
-                            indexItem.setItemOriginalHash(subtitle.getId());
-                            indexItems.add(indexItem);
-                            subtitles.add(subtitle);
-                        });
-                        subtitleRepository.saveAll(subtitles);
-                        indexFile.setIndexItems(indexItems);
-                        indexFile.setProcessed(true);
-                        indexFileRepository.save(indexFile);
-
-                        //logger.info("Subtitle cues count: " + subtitleCues.size());
-                    }
-                });
-            }
+            indexSubtitles();
 
             long endTime = System.currentTimeMillis();
             logger.info("Subtitle indexing time seconds: " + (endTime - startTime) / 1000);
             fileService.reset(); //reset iterator
             startTime = System.currentTimeMillis();
 
-
-            while(!(files = fileService.getNext()).isEmpty()){
-                files.forEach(file -> {
-                    if(file.getAbsolutePath().endsWith(categoryInfoIndexFileExtension)){
-                        IndexFileCategory indexFileCategory;
-                        try {
-                            indexFileCategory = indexFileCategoryRepository.save(saveFileCategoryInDb(file));
-                        } catch (IOException | NoSuchAlgorithmException e) {
-                            throw new RuntimeException(e);
-                        }
-                        if(indexFileCategory.isFileChanged() || indexFileCategory.isFileDeleted()){
-                            categoryInfoRepository.delete(indexFileCategoryToCategory(indexFileCategory.getItemOriginalHash()));
-                        }
-                        CategoryInfo categoryInfo = populateCategoryInfo(file.getPath());
-                        categoryInfoRepository.save(categoryInfo);
-                        indexFileCategory.setProcessed(true);
-                        indexFileCategory.setItemOriginalHash(categoryInfo.getId());
-                        indexFileCategoryRepository.save(indexFileCategory);
-                    }
-                });
-            }
+            indexCategoryInfo();
             endTime = System.currentTimeMillis();
             logger.info("CategoryInfo indexing time seconds: " + (endTime - startTime) / 1000);
         } finally {
             fileService.reset(); //reset iterator
         }
 
+    }
+
+    private void indexCategoryInfo() {
+        List<File> files;
+        while(!(files = fileService.getNext()).isEmpty()){
+            files.forEach(file -> {
+                if(file.getAbsolutePath().endsWith(categoryInfoIndexFileExtension)){
+                    IndexFileCategory indexFileCategory;
+                    try {
+                        indexFileCategory = indexFileCategoryRepository.save(saveFileCategoryInDb(file));
+                    } catch (IOException | NoSuchAlgorithmException e) {
+                        throw new RuntimeException(e);
+                    }
+                    if(indexFileCategory.isFileChanged() || indexFileCategory.isFileDeleted()){
+                        indexFileCategory.setProcessed(false);
+                        categoryInfoRepository.delete(indexFileCategoryToCategory(indexFileCategory.getItemOriginalHash()));
+                    }
+                    CategoryInfo categoryInfo = populateCategoryInfo(file.getPath());
+                    if(!indexFileCategory.isProcessed()){
+                        categoryInfoRepository.save(categoryInfo);
+                        indexFileCategory.setProcessed(true);
+                        indexFileCategory.setItemOriginalHash(categoryInfo.getId());
+                        indexFileCategoryRepository.save(indexFileCategory);
+                    }
+                }
+            });
+        }
+    }
+
+    private void indexSubtitles() {
+        List<File> files;
+        while(!(files = fileService.getNext()).isEmpty()){
+            files.forEach(file -> {
+                Set<Subtitle> subtitles = new HashSet<>();
+                if(file.getAbsolutePath().endsWith(subtitleIndexFileExtension)){
+                    IndexFile indexFile;
+                    try {
+                        indexFile = indexFileRepository.save(saveFileInDb(file));
+                    } catch (IOException | NoSuchAlgorithmException e) {
+                        throw new RuntimeException(e);
+                    }
+
+                    VttObject vttObject;
+                    try {
+                        vttObject = vttParser.parse(new FileInputStream(file));
+                    } catch (IOException | SubtitleParsingException e) {
+                        throw new RuntimeException(e);
+                    }
+                    if(indexFile.isFileChanged() || indexFile.isFileDeleted()){
+                        indexFile.setProcessed(false);
+                        subtitleRepository.deleteAll(indexItemsToSubtitles(indexFile.getIndexItems()));
+                    }
+                    Set<IndexItem> indexItems = new HashSet<>();
+                    List<SubtitleCue> subtitleCues = vttObject.getCues();
+                    subtitleCues.forEach(subtitleCue -> {
+                        Subtitle subtitle = populateSubtitle(subtitleCue, file.getPath());
+                        IndexItem indexItem = new IndexItem();
+                        indexItem.setIndexFile(indexFile);
+                        indexItem.setItemOriginalHash(subtitle.getId());
+                        indexItems.add(indexItem);
+                        subtitles.add(subtitle);
+                    });
+                    if(!indexFile.isProcessed()){
+                        subtitleRepository.saveAll(subtitles);
+                        indexFile.setIndexItems(indexItems);
+                        indexFile.setProcessed(true);
+                        indexFileRepository.save(indexFile);
+                    }
+
+                    //logger.info("Subtitle cues count: " + subtitleCues.size());
+                }
+            });
+        }
     }
 
     private Set<Subtitle> indexItemsToSubtitles(Set<IndexItem> indexItems) {
