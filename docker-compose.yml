@@ -6,7 +6,7 @@ services:
     build:
       dockerfile: Dockerfile
     ports:
-      - "8083:8081"
+      - "8081:8081"
     environment:
       - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} #active profile, one of: local, dev, prod
       - JOB_CRON=${JOB_CRON} #cron schedule for automatic run
