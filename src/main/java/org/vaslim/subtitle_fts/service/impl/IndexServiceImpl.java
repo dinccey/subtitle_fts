@@ -117,12 +117,13 @@ public class IndexServiceImpl implements IndexService {
                     }
                     if(indexFileCategory.isFileChanged()){
                         indexFileCategory.setProcessed(false);
-                        categoryInfoRepository.delete(indexFileCategoryToCategory(indexFileCategory.getItemOriginalHash()));
+                        categoryInfoRepository.delete(indexFileCategoryToCategory(indexFileCategory.getDocumentId()));
+                        indexFileCategoryRepository.save(indexFileCategory);
                     }
                     if(indexFileCategory.isFileDeleted()){
-                        categoryInfoRepository.delete(indexFileCategoryToCategory(indexFileCategory.getItemOriginalHash()));
+                        categoryInfoRepository.delete(indexFileCategoryToCategory(indexFileCategory.getDocumentId()));
+                        indexFileCategoryRepository.delete(indexFileCategory);
                     }
-                    indexFileCategoryRepository.save(indexFileCategory);
                 }
             });
         }
@@ -131,9 +132,10 @@ public class IndexServiceImpl implements IndexService {
         indexFileCategoryRepository.findIndexFileByProcessedIsFalse().forEach(indexFileCategory -> {
             File file = new File(indexFileCategory.getFilePath());
             CategoryInfo categoryInfo = populateCategoryInfo(file.getPath());
+            indexFileCategory.setDocumentId(categoryInfo.getId());
             categoryInfoRepository.save(categoryInfo);
             indexFileCategory.setProcessed(true);
-            indexFileCategory.setItemOriginalHash(generateId(categoryInfo.getCategoryInfo(),categoryInfo.getSubtitlePath()));
+            indexFileCategory.setDocumentId(categoryInfo.getId());
             indexFileCategoryRepository.save(indexFileCategory);
         });
     }
@@ -153,11 +155,13 @@ public class IndexServiceImpl implements IndexService {
                     if(indexFile.isFileChanged()){
                         indexFile.setProcessed(false);
                         subtitleRepository.deleteAll(indexItemsToSubtitles(indexFile.getIndexItems()));
+                        indexFileRepository.save(indexFile);
                     }
                     if(indexFile.isFileDeleted()){
                         subtitleRepository.deleteAll(indexItemsToSubtitles(indexFile.getIndexItems()));
+                        indexFileRepository.delete(indexFile);
                     }
-                    indexFileRepository.save(indexFile);
+
                 }
             });
         }
@@ -177,7 +181,7 @@ public class IndexServiceImpl implements IndexService {
                 Subtitle subtitle = populateSubtitle(subtitleCue, file.getPath());
                 IndexItem indexItem = new IndexItem();
                 indexItem.setIndexFile(indexFile);
-                indexItem.setItemOriginalHash(subtitle.getId());
+                indexItem.setDocumentId(subtitle.getId());
                 indexItems.add(indexItem);
                 subtitles.add(subtitle);
             });
@@ -193,7 +197,7 @@ public class IndexServiceImpl implements IndexService {
         Set<Subtitle> subtitles = new HashSet<>();
         indexItems.forEach(indexItem -> {
             Subtitle subtitle = new Subtitle();
-            subtitle.setId(indexItem.getItemOriginalHash());
+            subtitle.setId(indexItem.getDocumentId());
             subtitles.add(subtitle);
         });
         return subtitles;
@@ -304,7 +308,7 @@ public class IndexServiceImpl implements IndexService {
         CategoryInfo categoryInfo = new CategoryInfo();
         categoryInfo.setCategoryInfo(getCategoryInfo(getPath(filename)));
         categoryInfo.setSubtitlePath(getPath(filename));
-        categoryInfo.setId(getPath(filename).replaceAll(categoryInfoIndexFileExtension,"").replaceAll(subtitleIndexFileExtension,""));
+        categoryInfo.setId(generateId(categoryInfo.getCategoryInfo(),categoryInfo.getSubtitlePath()));
         return categoryInfo;
     }
 

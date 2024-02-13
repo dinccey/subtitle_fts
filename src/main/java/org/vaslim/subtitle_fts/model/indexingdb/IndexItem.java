@@ -16,7 +16,7 @@ public class IndexItem {
     @JoinColumn(name="indexFile", nullable=false)
     private IndexFile indexFile;
     @Column(length = 64, unique = true)
-    private String itemOriginalHash;
+    private String documentId;
 
     public Long getId() {
         return id;
@@ -34,11 +34,11 @@ public class IndexItem {
         this.indexFile = indexFile;
     }
 
-    public String getItemOriginalHash() {
-        return itemOriginalHash;
+    public String getDocumentId() {
+        return documentId;
     }
 
-    public void setItemOriginalHash(String itemOriginalHash) {
-        this.itemOriginalHash = itemOriginalHash;
+    public void setDocumentId(String itemOriginalHash) {
+        this.documentId = itemOriginalHash;
     }
 }
