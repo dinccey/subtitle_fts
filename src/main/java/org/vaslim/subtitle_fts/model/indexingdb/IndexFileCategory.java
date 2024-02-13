@@ -2,9 +2,6 @@ package org.vaslim.subtitle_fts.model.indexingdb;
 
 import jakarta.persistence.*;
 
-import java.util.HashSet;
-import java.util.Set;
-
 @Entity
 @Table(name = "index_file_category")
 public class IndexFileCategory {
@@ -18,8 +15,9 @@ public class IndexFileCategory {
     @Column(unique = true)
     private String filePath;
 
+    //represents id in elastic document
     @Column(length = 64, unique = true)
-    private String itemOriginalHash;
+    private String documentId;
 
     @Column
     private boolean processed = false;
@@ -81,11 +79,11 @@ public class IndexFileCategory {
         this.fileChanged = fileChanged;
     }
 
-    public String getItemOriginalHash() {
-        return itemOriginalHash;
+    public String getDocumentId() {
+        return documentId;
     }
 
-    public void setItemOriginalHash(String itemOriginalHash) {
-        this.itemOriginalHash = itemOriginalHash;
+    public void setDocumentId(String itemOriginalHash) {
+        this.documentId = itemOriginalHash;
     }
 }
