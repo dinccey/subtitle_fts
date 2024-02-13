@@ -111,15 +111,16 @@ public class IndexServiceImpl implements IndexService {
                 if(file.getAbsolutePath().endsWith(categoryInfoIndexFileExtension)){
                     IndexFileCategory indexFileCategory;
                     try {
-                        indexFileCategory = indexFileCategoryRepository.save(saveFileCategoryInDb(file));
+                        indexFileCategory = indexFileCategoryRepository.save(getIndexFileCategoryUpdated(file));
                     } catch (IOException | NoSuchAlgorithmException e) {
                         throw new SubtitleFtsException(e.getMessage());
                     }
-                    if(indexFileCategory.isFileChanged()){
-                        indexFileCategory.setProcessed(false);
-                        categoryInfoRepository.delete(indexFileCategoryToCategory(indexFileCategory.getDocumentId()));
-                        indexFileCategoryRepository.save(indexFileCategory);
-                    }
+                    //currently there is no need to check for this
+//                    if(indexFileCategory.isFileChanged()){
+//                        indexFileCategory.setProcessed(false);
+//                        categoryInfoRepository.delete(indexFileCategoryToCategory(indexFileCategory.getDocumentId()));
+//                        indexFileCategoryRepository.save(indexFileCategory);
+//                    }
                     if(indexFileCategory.isFileDeleted()){
                         categoryInfoRepository.delete(indexFileCategoryToCategory(indexFileCategory.getDocumentId()));
                         indexFileCategoryRepository.delete(indexFileCategory);
@@ -148,7 +149,7 @@ public class IndexServiceImpl implements IndexService {
                 if(file.getAbsolutePath().endsWith(subtitleIndexFileExtension)){
                     IndexFile indexFile;
                     try {
-                        indexFile = indexFileRepository.save(saveFileInDb(file));
+                        indexFile = indexFileRepository.save(getIndexFileUpdated(file));
                     } catch (IOException | NoSuchAlgorithmException e) {
                         throw new SubtitleFtsException(e.getMessage());
                     }
@@ -208,7 +209,7 @@ public class IndexServiceImpl implements IndexService {
        return categoryInfo;
     }
 
-    private IndexFile saveFileInDb(File file) throws IOException, NoSuchAlgorithmException {
+    private IndexFile getIndexFileUpdated(File file) throws IOException, NoSuchAlgorithmException {
         IndexFile indexFile = indexFileRepository.findByFilePath(file.getAbsolutePath()).orElse(new IndexFile());
         indexFile.setFileDeleted(false);
         if(!file.exists()){
@@ -223,14 +224,14 @@ public class IndexServiceImpl implements IndexService {
         indexFile.setFilePath(file.getAbsolutePath());
         return indexFile;
     }
-    private IndexFileCategory saveFileCategoryInDb(File file) throws IOException, NoSuchAlgorithmException {
+    private IndexFileCategory getIndexFileCategoryUpdated(File file) throws IOException, NoSuchAlgorithmException {
         IndexFileCategory indexFile = indexFileCategoryRepository.findByFilePath(file.getAbsolutePath()).orElse(new IndexFileCategory());
         indexFile.setFileDeleted(false);
         if(!file.exists()){
             indexFile.setFileDeleted(true);
         }
         String oldHash = indexFile.getFileHash();
-        indexFile.setFileHash(generateMD5(file));
+        //indexFile.setFileHash(generateId(file.));
         indexFile.setFileChanged(false);
         if(!indexFile.getFileHash().equals(oldHash)){
             indexFile.setFileChanged(true);
