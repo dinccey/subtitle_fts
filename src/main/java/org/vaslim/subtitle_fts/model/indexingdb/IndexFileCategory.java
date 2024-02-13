@@ -18,7 +18,7 @@ public class IndexFileCategory {
     @Column(unique = true)
     private String filePath;
 
-    @Column(length = 128, unique = true)
+    @Column(length = 64, unique = true)
     private String itemOriginalHash;
 
     @Column

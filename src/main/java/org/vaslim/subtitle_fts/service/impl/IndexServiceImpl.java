@@ -133,7 +133,7 @@ public class IndexServiceImpl implements IndexService {
             CategoryInfo categoryInfo = populateCategoryInfo(file.getPath());
             categoryInfoRepository.save(categoryInfo);
             indexFileCategory.setProcessed(true);
-            indexFileCategory.setItemOriginalHash(categoryInfo.getId());
+            indexFileCategory.setItemOriginalHash(generateId(categoryInfo.getCategoryInfo(),categoryInfo.getSubtitlePath()));
             indexFileCategoryRepository.save(indexFileCategory);
         });
     }
