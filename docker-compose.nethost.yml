@@ -16,6 +16,9 @@ services:
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
       - JWT_SECRET=${JWT_SECRET} #change this
       - CATEGORY_INFO_INDEX_FILE_EXTENSION=${CATEGORY_INFO_INDEX_FILE_EXTENSION} #file extension used to index videos for information, can be .mp4, .vtt or something else if needed, parses path for info
+      - DATASOURCE_URL=${DATASOURCE_URL}
+      - DATASOURCE_USERNAME=${DATASOURCE_USERNAME}
+      - DATASOURCE_PASSWORD=${DATASOURCE_PASSWORD} #database is used to track what new stuff needs to be indexed and old stuff deleted from index
     restart: always
     #depends_on:
       #elasticsearch:
