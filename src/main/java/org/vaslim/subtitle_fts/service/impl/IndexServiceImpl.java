@@ -19,6 +19,7 @@ import org.vaslim.subtitle_fts.database.IndexFileCategoryRepository;
 import org.vaslim.subtitle_fts.database.IndexFileRepository;
 import org.vaslim.subtitle_fts.elastic.CategoryInfoRepository;
 import org.vaslim.subtitle_fts.elastic.SubtitleRepository;
+import org.vaslim.subtitle_fts.exception.SubtitleFtsException;
 import org.vaslim.subtitle_fts.model.elastic.CategoryInfo;
 import org.vaslim.subtitle_fts.model.elastic.Subtitle;
 import org.vaslim.subtitle_fts.model.indexingdb.IndexFile;
@@ -112,68 +113,80 @@ public class IndexServiceImpl implements IndexService {
                     try {
                         indexFileCategory = indexFileCategoryRepository.save(saveFileCategoryInDb(file));
                     } catch (IOException | NoSuchAlgorithmException e) {
-                        throw new RuntimeException(e);
+                        throw new SubtitleFtsException(e.getMessage());
                     }
-                    if(indexFileCategory.isFileChanged() || indexFileCategory.isFileDeleted()){
+                    if(indexFileCategory.isFileChanged()){
                         indexFileCategory.setProcessed(false);
                         categoryInfoRepository.delete(indexFileCategoryToCategory(indexFileCategory.getItemOriginalHash()));
                     }
-                    CategoryInfo categoryInfo = populateCategoryInfo(file.getPath());
-                    if(!indexFileCategory.isProcessed()){
-                        categoryInfoRepository.save(categoryInfo);
-                        indexFileCategory.setProcessed(true);
-                        indexFileCategory.setItemOriginalHash(categoryInfo.getId());
-                        indexFileCategoryRepository.save(indexFileCategory);
+                    if(indexFileCategory.isFileDeleted()){
+                        categoryInfoRepository.delete(indexFileCategoryToCategory(indexFileCategory.getItemOriginalHash()));
                     }
+                    indexFileCategoryRepository.save(indexFileCategory);
                 }
             });
         }
+
+        indexFileCategoryRepository.flush();
+        indexFileCategoryRepository.findIndexFileByProcessedIsFalse().forEach(indexFileCategory -> {
+            File file = new File(indexFileCategory.getFilePath());
+            CategoryInfo categoryInfo = populateCategoryInfo(file.getPath());
+            categoryInfoRepository.save(categoryInfo);
+            indexFileCategory.setProcessed(true);
+            indexFileCategory.setItemOriginalHash(categoryInfo.getId());
+            indexFileCategoryRepository.save(indexFileCategory);
+        });
     }
 
     private void indexSubtitles() {
         List<File> files;
         while(!(files = fileService.getNext()).isEmpty()){
             files.forEach(file -> {
-                Set<Subtitle> subtitles = new HashSet<>();
+
                 if(file.getAbsolutePath().endsWith(subtitleIndexFileExtension)){
                     IndexFile indexFile;
                     try {
                         indexFile = indexFileRepository.save(saveFileInDb(file));
                     } catch (IOException | NoSuchAlgorithmException e) {
-                        throw new RuntimeException(e);
+                        throw new SubtitleFtsException(e.getMessage());
                     }
-
-                    VttObject vttObject;
-                    try {
-                        vttObject = vttParser.parse(new FileInputStream(file));
-                    } catch (IOException | SubtitleParsingException e) {
-                        throw new RuntimeException(e);
-                    }
-                    if(indexFile.isFileChanged() || indexFile.isFileDeleted()){
+                    if(indexFile.isFileChanged()){
                         indexFile.setProcessed(false);
                         subtitleRepository.deleteAll(indexItemsToSubtitles(indexFile.getIndexItems()));
                     }
-                    Set<IndexItem> indexItems = new HashSet<>();
-                    List<SubtitleCue> subtitleCues = vttObject.getCues();
-                    subtitleCues.forEach(subtitleCue -> {
-                        Subtitle subtitle = populateSubtitle(subtitleCue, file.getPath());
-                        IndexItem indexItem = new IndexItem();
-                        indexItem.setIndexFile(indexFile);
-                        indexItem.setItemOriginalHash(subtitle.getId());
-                        indexItems.add(indexItem);
-                        subtitles.add(subtitle);
-                    });
-                    if(!indexFile.isProcessed()){
-                        subtitleRepository.saveAll(subtitles);
-                        indexFile.setIndexItems(indexItems);
-                        indexFile.setProcessed(true);
-                        indexFileRepository.save(indexFile);
+                    if(indexFile.isFileDeleted()){
+                        subtitleRepository.deleteAll(indexItemsToSubtitles(indexFile.getIndexItems()));
                     }
-
-                    //logger.info("Subtitle cues count: " + subtitleCues.size());
+                    indexFileRepository.save(indexFile);
                 }
             });
         }
+        indexFileRepository.flush();
+        indexFileRepository.findIndexFileByProcessedIsFalse().forEach(indexFile -> {
+            File file = new File(indexFile.getFilePath());
+            Set<IndexItem> indexItems = new HashSet<>();
+            VttObject vttObject;
+            try {
+                vttObject = vttParser.parse(new FileInputStream(file));
+            } catch (IOException | SubtitleParsingException e) {
+                throw new SubtitleFtsException(e.getMessage());
+            }
+            List<SubtitleCue> subtitleCues = vttObject.getCues();
+            Set<Subtitle> subtitles = new HashSet<>();
+            subtitleCues.forEach(subtitleCue -> {
+                Subtitle subtitle = populateSubtitle(subtitleCue, file.getPath());
+                IndexItem indexItem = new IndexItem();
+                indexItem.setIndexFile(indexFile);
+                indexItem.setItemOriginalHash(subtitle.getId());
+                indexItems.add(indexItem);
+                subtitles.add(subtitle);
+            });
+
+            subtitleRepository.saveAll(subtitles);
+            indexFile.setIndexItems(indexItems);
+            indexFile.setProcessed(true);
+            indexFileRepository.save(indexFile);
+        });
     }
 
     private Set<Subtitle> indexItemsToSubtitles(Set<IndexItem> indexItems) {
