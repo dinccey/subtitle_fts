@@ -15,7 +15,7 @@ public class IndexItem {
     @ManyToOne
     @JoinColumn(name="indexFile", nullable=false)
     private IndexFile indexFile;
-    @Column(length = 64, unique = true)
+    @Column(length = 128, unique = true)
     private String itemOriginalHash;
 
     public Long getId() {
