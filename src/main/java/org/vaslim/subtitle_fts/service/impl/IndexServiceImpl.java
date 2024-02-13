@@ -236,10 +236,10 @@ public class IndexServiceImpl implements IndexService {
         }
         String oldHash = indexFile.getFileHash();
         //indexFile.setFileHash(generateId(file.));
-        indexFile.setFileChanged(false);
-        if(!indexFile.getFileHash().equals(oldHash)){
-            indexFile.setFileChanged(true);
-        }
+        //indexFile.setFileChanged(false);
+        //if(!indexFile.getFileHash().equals(oldHash)){
+        //    indexFile.setFileChanged(true);
+        //}
         indexFile.setFilePath(file.getAbsolutePath());
         return indexFile;
     }
