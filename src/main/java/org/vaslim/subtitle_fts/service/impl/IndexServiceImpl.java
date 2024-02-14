@@ -148,7 +148,7 @@ public class IndexServiceImpl implements IndexService {
             indexFileCategory.setDocumentId(categoryInfo.getId());
             indexFileCategoryRepository.save(indexFileCategory);
         });
-        indexItemRepository.flush();
+        indexFileCategoryRepository.flush();
     }
 
     private void indexSubtitles() {
@@ -196,13 +196,13 @@ public class IndexServiceImpl implements IndexService {
                 indexItems.add(indexItem);
                 subtitles.add(subtitle);
             });
-
+            indexItemRepository.saveAll(indexItems);
             subtitleRepository.saveAll(subtitles);
             indexFile.setIndexItems(indexItems);
             indexFile.setProcessed(true);
             indexFileRepository.save(indexFile);
         });
-        indexItemRepository.flush();
+        indexFileRepository.flush();
     }
 
     private Set<Subtitle> indexItemsToSubtitles(Set<IndexItem> indexItems) {
