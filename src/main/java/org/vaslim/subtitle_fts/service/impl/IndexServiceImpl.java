@@ -6,6 +6,7 @@ import fr.noop.subtitle.model.SubtitleCue;
 import fr.noop.subtitle.model.SubtitleParsingException;
 import fr.noop.subtitle.vtt.VttObject;
 import fr.noop.subtitle.vtt.VttParser;
+import net.openhft.hashing.LongHashFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,10 +33,12 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import java.util.zip.CRC32;
 
 @Service
 public class IndexServiceImpl implements IndexService {
@@ -221,7 +224,7 @@ public class IndexServiceImpl implements IndexService {
         IndexFile indexFile = indexFileRepository.findByFilePath(file.getAbsolutePath()).orElse(new IndexFile());
         indexFile.setFileDeleted(false);
         String oldHash = indexFile.getFileHash();
-        indexFile.setFileHash(generateMD5(file));
+        indexFile.setFileHash(generateXXH3(file));
         indexFile.setFileChanged(false);
         if(!indexFile.getFileHash().equals(oldHash)){
             indexFile.setFileChanged(true);
@@ -352,38 +355,22 @@ public class IndexServiceImpl implements IndexService {
 
 
     public String generateId(String title, String text) {
-        try {
-            // Create a MessageDigest instance with MD5 algorithm
-            MessageDigest md = MessageDigest.getInstance("MD5");
-            // Convert the title and text to bytes and update the digest
-            md.update(title.getBytes());
-            md.update(text.getBytes());
-            // Get the digest bytes
-            byte[] digest = md.digest();
-            // Convert the bytes to hexadecimal format
-            StringBuilder sb = new StringBuilder();
-            for (byte b : digest) {
-                sb.append(String.format("%02x", b));
-            }
-            // Return the hexadecimal string as the ID
-            return sb.toString();
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-            return null;
-        }
+        LongHashFunction xxh3 = LongHashFunction.xx();
+        long hash = xxh3.hashChars(title + text);
+        return Long.toHexString(hash);
     }
 
-    public static String generateMD5(File file) throws IOException, NoSuchAlgorithmException {
-        MessageDigest md5Digest = MessageDigest.getInstance("MD5");
+    public static String generateXXH3(File file) throws IOException {
+        LongHashFunction xxh3 = LongHashFunction.xx();
         try (InputStream fis = new FileInputStream(file)) {
             byte[] buffer = new byte[1024];
             int bytesRead;
+            long hash = 0;
             while ((bytesRead = fis.read(buffer)) != -1) {
-                md5Digest.update(buffer, 0, bytesRead);
+                hash = xxh3.hashBytes(buffer, 0, bytesRead);
             }
+            return Long.toHexString(hash);
         }
-        byte[] hashedBytes = md5Digest.digest();
-        return convertByteArrayToHexString(hashedBytes);
     }
 
     private static String convertByteArrayToHexString(byte[] arrayBytes) {
