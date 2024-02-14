@@ -20,7 +20,6 @@ import org.vaslim.subtitle_fts.database.IndexFileRepository;
 import org.vaslim.subtitle_fts.database.IndexItemRepository;
 import org.vaslim.subtitle_fts.elastic.CategoryInfoRepository;
 import org.vaslim.subtitle_fts.elastic.SubtitleRepository;
-import org.vaslim.subtitle_fts.exception.SubtitleFtsException;
 import org.vaslim.subtitle_fts.model.elastic.CategoryInfo;
 import org.vaslim.subtitle_fts.model.elastic.Subtitle;
 import org.vaslim.subtitle_fts.model.indexingdb.IndexFile;
@@ -117,7 +116,7 @@ public class IndexServiceImpl implements IndexService {
                     try {
                         indexFileCategory = indexFileCategoryRepository.save(getIndexFileCategoryUpdated(file));
                     } catch (IOException | NoSuchAlgorithmException e) {
-                        throw new SubtitleFtsException(e.getMessage());
+                        throw new RuntimeException(e);
                     }
                     //currently there is no need to check for this
 //                    if(indexFileCategory.isFileChanged()){
@@ -155,7 +154,7 @@ public class IndexServiceImpl implements IndexService {
                     try {
                         indexFile = indexFileRepository.save(getIndexFileUpdated(file));
                     } catch (IOException | NoSuchAlgorithmException e) {
-                        throw new SubtitleFtsException(e.getMessage());
+                        throw new RuntimeException(e);
                     }
                     if(indexFile.isFileChanged()){
                         indexFile.setProcessed(false);
@@ -178,7 +177,7 @@ public class IndexServiceImpl implements IndexService {
             try {
                 vttObject = vttParser.parse(new FileInputStream(file));
             } catch (IOException | SubtitleParsingException e) {
-                throw new SubtitleFtsException(e.getMessage());
+                throw new RuntimeException(e);
             }
             List<SubtitleCue> subtitleCues = vttObject.getCues();
             Set<Subtitle> subtitles = new HashSet<>();
