@@ -79,11 +79,11 @@
 			<artifactId>commons-cli</artifactId>
 			<version>1.6.0</version>
 		</dependency>
-		<!-- https://mvnrepository.com/artifact/net.openhft/zero-allocation-hashing -->
+		<!-- https://mvnrepository.com/artifact/org.lwjgl/lwjgl-xxhash -->
 		<dependency>
-			<groupId>net.openhft</groupId>
-			<artifactId>zero-allocation-hashing</artifactId>
-			<version>0.16</version>
+			<groupId>org.lwjgl</groupId>
+			<artifactId>lwjgl-xxhash</artifactId>
+			<version>3.3.3</version>
 		</dependency>
 
 	</dependencies>
