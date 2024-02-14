@@ -6,8 +6,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Entity
-@Table(name = "index_file")
-//@Table(name = "index_file", indexes = {@Index(name = "index_filePath", columnList = "filePath")})
+//@Table(name = "index_file")
+@Table(name = "index_file", indexes = {@Index(name = "index_filePath", columnList = "filePath")})
 public class IndexFile {
 
     @Id
