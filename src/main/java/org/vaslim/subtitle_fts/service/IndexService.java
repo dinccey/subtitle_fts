@@ -7,4 +7,6 @@ public interface IndexService {
     void runIndexing();
 
     void deleteIndex();
+
+    void cleanupIndex();
 }

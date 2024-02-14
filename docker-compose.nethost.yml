@@ -9,6 +9,7 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} #active profile, one of: local, dev, prod
       - JOB_CRON=${JOB_CRON} #cron schedule for automatic run
+      - JOB_CLEANUP_CRON=${JOB_CLEANUP_CRON}
       - ELASTICSEARCH_ADDRESS=${ELASTICSEARCH_ADDRESS}
       - ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME}
       - ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_PASSWORD}

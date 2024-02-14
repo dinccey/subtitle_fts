@@ -32,6 +32,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
@@ -107,6 +108,8 @@ public class IndexServiceImpl implements IndexService {
         }
 
     }
+
+
 
     private void indexCategoryInfo() {
         List<File> files;
@@ -420,6 +423,35 @@ public class IndexServiceImpl implements IndexService {
         indexFileRepository.deleteAll();
         indexFileCategoryRepository.deleteAll();
         indexItemRepository.deleteAll();
+    }
+
+    @Override
+    public void cleanupIndex() {
+        try {
+            long startTime = System.currentTimeMillis();
+            Set<IndexFile> toDelete = new HashSet<>();
+            indexFileRepository.findAll().forEach(indexFile -> {
+                if (!Files.exists(java.nio.file.Paths.get(indexFile.getFilePath()))) {
+                    toDelete.add(indexFile);
+                }
+            });
+            indexFileRepository.deleteAll(toDelete);
+            long endTime = System.currentTimeMillis();
+            logger.info("Subtitle database cleanup time " + (endTime - startTime) / 1000);
+
+            startTime = System.currentTimeMillis();
+
+            Set<IndexFileCategory> toDeleteCategory = new HashSet<>();
+            indexFileCategoryRepository.findAll().forEach(indexFileCategory -> {
+                if (!Files.exists(java.nio.file.Paths.get(indexFileCategory.getFilePath()))) {
+                    toDeleteCategory.add(indexFileCategory);
+                }
+            });
+            indexFileCategoryRepository.deleteAll(toDeleteCategory);
+            endTime = System.currentTimeMillis();
+            logger.info("Category database cleanup time seconds: " + (endTime - startTime) / 1000);
+        } finally {
+        }
     }
 
 }
