@@ -220,9 +220,6 @@ public class IndexServiceImpl implements IndexService {
     private IndexFile getIndexFileUpdated(File file) throws IOException, NoSuchAlgorithmException {
         IndexFile indexFile = indexFileRepository.findByFilePath(file.getAbsolutePath()).orElse(new IndexFile());
         indexFile.setFileDeleted(false);
-        if(!file.exists()){
-            indexFile.setFileDeleted(true);
-        }
         String oldHash = indexFile.getFileHash();
         indexFile.setFileHash(generateMD5(file));
         indexFile.setFileChanged(false);
@@ -235,15 +232,6 @@ public class IndexServiceImpl implements IndexService {
     private IndexFileCategory getIndexFileCategoryUpdated(File file) throws IOException, NoSuchAlgorithmException {
         IndexFileCategory indexFile = indexFileCategoryRepository.findByFilePath(file.getAbsolutePath()).orElse(new IndexFileCategory());
         indexFile.setFileDeleted(false);
-        if(!file.exists()){
-            indexFile.setFileDeleted(true);
-        }
-        String oldHash = indexFile.getFileHash();
-        //indexFile.setFileHash(generateId(file.));
-        //indexFile.setFileChanged(false);
-        //if(!indexFile.getFileHash().equals(oldHash)){
-        //    indexFile.setFileChanged(true);
-        //}
         indexFile.setFilePath(file.getAbsolutePath());
         return indexFile;
     }
@@ -429,25 +417,21 @@ public class IndexServiceImpl implements IndexService {
     public void cleanupIndex() {
         try {
             long startTime = System.currentTimeMillis();
-            Set<IndexFile> toDelete = new HashSet<>();
             indexFileRepository.findAll().forEach(indexFile -> {
                 if (!Files.exists(java.nio.file.Paths.get(indexFile.getFilePath()))) {
-                    toDelete.add(indexFile);
+                    indexFile.setFileDeleted(true);
                 }
             });
-            indexFileRepository.deleteAll(toDelete);
             long endTime = System.currentTimeMillis();
             logger.info("Subtitle database cleanup time " + (endTime - startTime) / 1000);
 
             startTime = System.currentTimeMillis();
 
-            Set<IndexFileCategory> toDeleteCategory = new HashSet<>();
             indexFileCategoryRepository.findAll().forEach(indexFileCategory -> {
                 if (!Files.exists(java.nio.file.Paths.get(indexFileCategory.getFilePath()))) {
-                    toDeleteCategory.add(indexFileCategory);
+                    indexFileCategory.setFileDeleted(true);
                 }
             });
-            indexFileCategoryRepository.deleteAll(toDeleteCategory);
             endTime = System.currentTimeMillis();
             logger.info("Category database cleanup time seconds: " + (endTime - startTime) / 1000);
         } finally {
