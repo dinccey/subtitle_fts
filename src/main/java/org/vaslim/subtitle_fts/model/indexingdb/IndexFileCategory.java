@@ -3,12 +3,13 @@ package org.vaslim.subtitle_fts.model.indexingdb;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "index_file_category", indexes = {@Index(name = "index_filePath", columnList = "filePath")})
+@Table(name = "index_file_category")
+//@Table(name = "index_file_category", indexes = {@Index(name = "index_filePath", columnList = "filePath")})
 public class IndexFileCategory {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "fileSeq")
-    @SequenceGenerator(name = "fileSeq", sequenceName = "file_seq", allocationSize = 1)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "fileCatSeq")
+    @SequenceGenerator(name = "fileCatSeq", sequenceName = "file_cat_seq", allocationSize = 1)
     @Column(unique = true, nullable = false, updatable = false)
     private Long id;
 
@@ -16,7 +17,7 @@ public class IndexFileCategory {
     private String filePath;
 
     //represents id in elastic document
-    @Column(length = 64, unique = true)
+    @Column(length = 64)
     private String documentId;
 
     @Column
