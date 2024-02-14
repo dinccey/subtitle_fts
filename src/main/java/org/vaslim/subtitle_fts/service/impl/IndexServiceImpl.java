@@ -6,7 +6,9 @@ import fr.noop.subtitle.model.SubtitleCue;
 import fr.noop.subtitle.model.SubtitleParsingException;
 import fr.noop.subtitle.vtt.VttObject;
 import fr.noop.subtitle.vtt.VttParser;
-import net.openhft.hashing.LongHashFunction;
+import org.lwjgl.system.MemoryStack;
+import org.lwjgl.util.xxhash.XXH128Hash;
+import org.lwjgl.util.xxhash.XXHash;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,13 +34,12 @@ import org.vaslim.subtitle_fts.service.IndexService;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
-import java.util.zip.CRC32;
 
 @Service
 public class IndexServiceImpl implements IndexService {
@@ -355,24 +356,28 @@ public class IndexServiceImpl implements IndexService {
 
 
     public String generateId(String title, String text) {
-        LongHashFunction xxh = LongHashFunction.xx128low();
-        long hash = xxh.hashChars(title + text);
-        return Long.toHexString(hash);
-    }
-
-    public static String generateXXH3(File file) throws IOException {
-        LongHashFunction xxh = LongHashFunction.xx128low();
-        try (InputStream fis = new FileInputStream(file)) {
-            byte[] buffer = new byte[1024];
-            int bytesRead;
-            long hash = 0;
-            while ((bytesRead = fis.read(buffer)) != -1) {
-                hash = xxh.hashBytes(buffer, 0, bytesRead);
-            }
-            return Long.toHexString(hash);
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            byte[] data = (title + text).getBytes(StandardCharsets.UTF_8);
+            ByteBuffer buffer = stack.malloc(data.length);
+            buffer.put(data).flip();
+            long hashLow = XXHash.XXH3_64bits(buffer);
+            long hashHigh = XXHash.XXH128(buffer, 0, XXH128Hash.create()).high64();
+            return Long.toHexString(hashHigh) + Long.toHexString(hashLow);
         }
     }
 
+    public static String generateXXH3(File file) throws IOException {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            FileInputStream fis = new FileInputStream(file);
+            FileChannel channel = fis.getChannel();
+            ByteBuffer buffer = stack.malloc((int) channel.size());
+            channel.read(buffer);
+            buffer.flip();
+            long hashLow = XXHash.XXH3_64bits(buffer);
+            long hashHigh = XXHash.XXH128(buffer, 0, XXH128Hash.create()).high64();
+            return Long.toHexString(hashHigh) + Long.toHexString(hashLow);
+        }
+    }
     private static String convertByteArrayToHexString(byte[] arrayBytes) {
         StringBuilder stringBuffer = new StringBuilder();
         for (byte bytes : arrayBytes) {
