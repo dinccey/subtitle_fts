@@ -356,8 +356,9 @@ public class IndexServiceImpl implements IndexService {
 
     public String generateId(String title, String text) {
         LongHashFunction xxh3 = LongHashFunction.xx();
-        long hash = xxh3.hashChars(title + text);
-        return Long.toHexString(hash);
+        long hash1 = xxh3.hashChars(title);
+        long hash2 = xxh3.hashChars(text);
+        return Long.toHexString(hash1 + hash2);
     }
 
     public static String generateXXH3(File file) throws IOException {
