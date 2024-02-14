@@ -3,8 +3,8 @@ package org.vaslim.subtitle_fts.model.indexingdb;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "index_file_category")
-//@Table(name = "index_file_category", indexes = {@Index(name = "index_filePath", columnList = "filePath")})
+//@Table(name = "index_file_category")
+@Table(name = "index_file_category", indexes = {@Index(name = "index_filePath", columnList = "filePath")})
 public class IndexFileCategory {
 
     @Id
