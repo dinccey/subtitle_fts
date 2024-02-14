@@ -91,16 +91,17 @@ public class IndexServiceImpl implements IndexService {
         //createIndexIfNotExists(Constants.INDEX_CATEGORY_INFO, getMappingsCategoryInfo());
         try {
             long startTime = System.currentTimeMillis();
-            indexSubtitles();
+
+            indexCategoryInfo();
 
             long endTime = System.currentTimeMillis();
-            logger.info("Subtitle indexing time seconds: " + (endTime - startTime) / 1000);
+            logger.info("CategoryInfo indexing time seconds " + (endTime - startTime) / 1000);
             fileService.reset(); //reset iterator
             startTime = System.currentTimeMillis();
 
-            indexCategoryInfo();
+            indexSubtitles();
             endTime = System.currentTimeMillis();
-            logger.info("CategoryInfo indexing time seconds: " + (endTime - startTime) / 1000);
+            logger.info("Subtitle indexing time seconds: " + (endTime - startTime) / 1000);
         } finally {
             fileService.reset(); //reset iterator
         }
@@ -134,14 +135,14 @@ public class IndexServiceImpl implements IndexService {
 
         indexFileCategoryRepository.flush();
         indexFileCategoryRepository.findIndexFileByProcessedIsFalse().forEach(indexFileCategory -> {
-            File file = new File(indexFileCategory.getFilePath());
-            CategoryInfo categoryInfo = populateCategoryInfo(file.getPath());
+            CategoryInfo categoryInfo = populateCategoryInfo(indexFileCategory.getFilePath());
             indexFileCategory.setDocumentId(categoryInfo.getId());
             categoryInfoRepository.save(categoryInfo);
             indexFileCategory.setProcessed(true);
             indexFileCategory.setDocumentId(categoryInfo.getId());
             indexFileCategoryRepository.save(indexFileCategory);
         });
+        indexItemRepository.flush();
     }
 
     private void indexSubtitles() {
@@ -195,6 +196,7 @@ public class IndexServiceImpl implements IndexService {
             indexFile.setProcessed(true);
             indexFileRepository.save(indexFile);
         });
+        indexItemRepository.flush();
     }
 
     private Set<Subtitle> indexItemsToSubtitles(Set<IndexItem> indexItems) {
