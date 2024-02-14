@@ -21,6 +21,7 @@ public class AdminController {
 
     @GetMapping("/index")
     public ResponseEntity<?> runIndex(){
+        indexService.cleanupIndex();
         indexService.runIndexing();
         return ResponseEntity.status(HttpStatus.OK).build();
     }
