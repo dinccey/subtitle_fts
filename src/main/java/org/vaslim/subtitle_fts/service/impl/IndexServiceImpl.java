@@ -355,19 +355,19 @@ public class IndexServiceImpl implements IndexService {
 
 
     public String generateId(String title, String text) {
-        LongHashFunction xxh = LongHashFunction.xx128low();
-        long hash = xxh.hashChars(title + text);
+        LongHashFunction xxh3 = LongHashFunction.xx();
+        long hash = xxh3.hashChars(title + text);
         return Long.toHexString(hash);
     }
 
     public static String generateXXH3(File file) throws IOException {
-        LongHashFunction xxh = LongHashFunction.xx128low();
+        LongHashFunction xxh3 = LongHashFunction.xx();
         try (InputStream fis = new FileInputStream(file)) {
             byte[] buffer = new byte[1024];
             int bytesRead;
             long hash = 0;
             while ((bytesRead = fis.read(buffer)) != -1) {
-                hash = xxh.hashBytes(buffer, 0, bytesRead);
+                hash = xxh3.hashBytes(buffer, 0, bytesRead);
             }
             return Long.toHexString(hash);
         }
