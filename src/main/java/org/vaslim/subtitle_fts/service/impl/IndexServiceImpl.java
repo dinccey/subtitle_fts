@@ -299,7 +299,7 @@ public class IndexServiceImpl implements IndexService {
         subtitle.setSubtitlePath(subtitlePath);
         subtitle.setText(subtitleCue.getText());
         subtitle.setTimestamp(convertTimestampToSeconds(subtitleCue.getId().substring(0, subtitleCue.getId().indexOf(" "))));
-        subtitle.setId(generateId(subtitle.getSubtitlePath(), subtitle.getText()));
+        subtitle.setId(generateId(subtitle.getSubtitlePath(), subtitle.getText(), String.valueOf(subtitle.getTimestamp())));
 
         return subtitle;
     }
@@ -308,7 +308,7 @@ public class IndexServiceImpl implements IndexService {
         CategoryInfo categoryInfo = new CategoryInfo();
         categoryInfo.setCategoryInfo(getCategoryInfo(getPath(filename)));
         categoryInfo.setSubtitlePath(getPath(filename));
-        categoryInfo.setId(generateId(categoryInfo.getCategoryInfo(),categoryInfo.getSubtitlePath()));
+        categoryInfo.setId(generateId(categoryInfo.getCategoryInfo(),categoryInfo.getSubtitlePath(), ""));
         return categoryInfo;
     }
 
@@ -354,11 +354,10 @@ public class IndexServiceImpl implements IndexService {
     }
 
 
-    public String generateId(String title, String text) {
+    public String generateId(String title, String text, String timestamp) {
         LongHashFunction xxh3 = LongHashFunction.xx();
-        long hash1 = xxh3.hashChars(title);
-        long hash2 = xxh3.hashChars(text);
-        return Long.toHexString(hash1) + Long.toHexString(hash2);
+        long hash = xxh3.hashChars(title + text + timestamp);
+        return Long.toHexString(hash);
     }
 
     public static String generateXXH3(File file) throws IOException {
