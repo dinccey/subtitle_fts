@@ -33,6 +33,9 @@ public class IndexFile {
     @OneToMany(mappedBy = "indexFile")
     Set<IndexItem> indexItems = new HashSet<>();
 
+    @Transient
+    private boolean objectChanged;
+
     public Long getId() {
         return id;
     }
@@ -54,7 +57,10 @@ public class IndexFile {
     }
 
     public void setProcessed(boolean processed) {
-        this.processed = processed;
+        if(processed != this.processed){
+            this.processed = processed;
+            setObjectChanged();
+        }
     }
 
     public String getFileHash() {
@@ -62,7 +68,11 @@ public class IndexFile {
     }
 
     public void setFileHash(String fileHash) {
-        this.fileHash = fileHash;
+        if(fileHash != null && !fileHash.equals(this.fileHash)){
+            this.fileHash = fileHash;
+            setObjectChanged();
+        }
+
     }
 
     public Set<IndexItem> getIndexItems() {
@@ -78,7 +88,11 @@ public class IndexFile {
     }
 
     public void setFileDeleted(boolean fileDeleted) {
-        this.fileDeleted = fileDeleted;
+        if(fileDeleted != this.fileDeleted){
+            this.fileDeleted = fileDeleted;
+            setObjectChanged();
+        }
+
     }
 
     public boolean isFileChanged() {
@@ -86,6 +100,16 @@ public class IndexFile {
     }
 
     public void setFileChanged(boolean fileChanged) {
-        this.fileChanged = fileChanged;
+        if(fileChanged != this.fileChanged){
+            this.fileChanged = fileChanged;
+            setObjectChanged();
+        }
+    }
+
+    private void setObjectChanged(){
+        this.objectChanged = true;
+    }
+    public boolean isObjectChanged() {
+        return objectChanged;
     }
 }

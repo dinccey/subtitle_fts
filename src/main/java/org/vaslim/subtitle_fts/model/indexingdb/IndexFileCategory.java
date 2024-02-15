@@ -31,6 +31,9 @@ public class IndexFileCategory {
     @Column(length = 64)
     private String fileHash;
 
+    @Transient
+    private boolean objectChanged;
+
     public Long getId() {
         return id;
     }
@@ -44,6 +47,9 @@ public class IndexFileCategory {
     }
 
     public void setFilePath(String filePath) {
+        if(filePath != null && !filePath.equals(this.fileHash)){
+            setObjectChanged();
+        }
         this.filePath = filePath;
     }
 
@@ -52,6 +58,9 @@ public class IndexFileCategory {
     }
 
     public void setProcessed(boolean processed) {
+        if(processed != this.processed){
+            setObjectChanged();
+        }
         this.processed = processed;
     }
 
@@ -60,6 +69,9 @@ public class IndexFileCategory {
     }
 
     public void setFileHash(String fileHash) {
+        if(fileHash != null && !fileHash.equals(this.fileHash)){
+            setObjectChanged();
+        }
         this.fileHash = fileHash;
     }
 
@@ -68,7 +80,10 @@ public class IndexFileCategory {
     }
 
     public void setFileDeleted(boolean fileDeleted) {
-        this.fileDeleted = fileDeleted;
+        if(fileDeleted != this.fileDeleted){
+            this.fileDeleted = fileDeleted;
+            setObjectChanged();
+        }
     }
 
     public boolean isFileChanged() {
@@ -85,5 +100,12 @@ public class IndexFileCategory {
 
     public void setDocumentId(String itemOriginalHash) {
         this.documentId = itemOriginalHash;
+    }
+
+    private void setObjectChanged(){
+        this.objectChanged = true;
+    }
+    public boolean isObjectChanged() {
+        return objectChanged;
     }
 }

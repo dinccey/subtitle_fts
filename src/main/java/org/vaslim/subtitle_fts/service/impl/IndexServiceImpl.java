@@ -124,7 +124,7 @@ public class IndexServiceImpl implements IndexService {
                 if(file.getAbsolutePath().endsWith(categoryInfoIndexFileExtension)){
                     IndexFileCategory indexFileCategory;
                     try {
-                        indexFileCategory = indexFileCategoryRepository.save(getIndexFileCategoryUpdated(file));
+                        indexFileCategory = getIndexFileCategoryUpdated(file);
                     } catch (IOException | NoSuchAlgorithmException e) {
                         throw new RuntimeException(e);
                     }
@@ -160,7 +160,6 @@ public class IndexServiceImpl implements IndexService {
                 indexFileCategoryRepository.save(indexFileCategory);
                 indexFileCategoryRepository.flush();
             }
-            pageable = pageable.next();
         } while (page.hasNext());
 
     }
@@ -173,7 +172,8 @@ public class IndexServiceImpl implements IndexService {
                 if(file.getAbsolutePath().endsWith(subtitleIndexFileExtension)){
                     IndexFile indexFile;
                     try {
-                        indexFile = indexFileRepository.save(getIndexFileUpdated(file));
+                        indexFile = getIndexFileUpdated(file);
+
                     } catch (IOException | NoSuchAlgorithmException e) {
                         throw new RuntimeException(e);
                     }
@@ -225,7 +225,7 @@ public class IndexServiceImpl implements IndexService {
                 indexFileRepository.save(indexFile);
 
             }
-            pageable = pageable.next();
+
         } while (page.hasNext());
         indexFileRepository.flush();
     }
@@ -257,6 +257,9 @@ public class IndexServiceImpl implements IndexService {
         if(indexFile.getFilePath() == null){
             indexFile.setFilePath(file.getAbsolutePath());
         }
+        if(indexFile.isObjectChanged()){
+            indexFileRepository.save(indexFile);
+        }
         return indexFile;
     }
     private IndexFileCategory getIndexFileCategoryUpdated(File file) throws IOException, NoSuchAlgorithmException {
@@ -264,6 +267,9 @@ public class IndexServiceImpl implements IndexService {
         indexFile.setFileDeleted(false);
         if(indexFile.getFilePath() == null){
             indexFile.setFilePath(file.getAbsolutePath());
+        }
+        if(indexFile.isObjectChanged()){
+            indexFileCategoryRepository.save(indexFile);
         }
         return indexFile;
     }
@@ -436,6 +442,7 @@ public class IndexServiceImpl implements IndexService {
             indexFileRepository.findAll().forEach(indexFile -> {
                 if (!Files.exists(java.nio.file.Paths.get(indexFile.getFilePath()))) {
                     indexFile.setFileDeleted(true);
+                    indexFileRepository.save(indexFile);
                 }
             });
             long endTime = System.currentTimeMillis();
@@ -446,11 +453,17 @@ public class IndexServiceImpl implements IndexService {
             indexFileCategoryRepository.findAll().forEach(indexFileCategory -> {
                 if (!Files.exists(java.nio.file.Paths.get(indexFileCategory.getFilePath()))) {
                     indexFileCategory.setFileDeleted(true);
+                    indexFileCategoryRepository.save(indexFileCategory);
+                }
+                else {
+
                 }
             });
             endTime = System.currentTimeMillis();
             logger.info("Category database cleanup time seconds: " + (endTime - startTime) / 1000);
-        } finally {
+        } catch (Exception e){
+            e.printStackTrace();
+            logger.error("Cleanup failed: " + e.getMessage());
         }
     }
 
