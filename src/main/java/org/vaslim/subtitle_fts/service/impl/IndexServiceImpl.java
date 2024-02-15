@@ -198,6 +198,7 @@ public class IndexServiceImpl implements IndexService {
         Pageable pageable = PageRequest.of(pageNumber, pageSize);
 
         Page<IndexFile> page;
+        Set<Subtitle> subtitles = new HashSet<>();
         do {
             page = indexFileRepository.findIndexFileByProcessedIsFalse(pageable);
             for (IndexFile indexFile : page) {
@@ -210,7 +211,7 @@ public class IndexServiceImpl implements IndexService {
                     throw new RuntimeException(e);
                 }
                 List<SubtitleCue> subtitleCues = vttObject.getCues();
-                Set<Subtitle> subtitles = new HashSet<>();
+
                 subtitleCues.forEach(subtitleCue -> {
                     Subtitle subtitle = populateSubtitle(subtitleCue, file.getPath());
                     IndexItem indexItem = new IndexItem();
@@ -224,7 +225,8 @@ public class IndexServiceImpl implements IndexService {
                 indexFile.setIndexItems(indexItems);
                 indexFile.setProcessed(true);
                 indexFileRepository.save(indexFile);
-
+                subtitles.clear();
+                indexItemRepository.flush();
             }
 
         } while (page.hasNext());
@@ -391,7 +393,7 @@ public class IndexServiceImpl implements IndexService {
 
 
     public String generateId(String title, String text, String timestamp) {
-        LongHashFunction xxh3 = LongHashFunction.xx();
+        LongHashFunction xxh3 = LongHashFunction.xx(); //extract into a bean?
         long hash1 = xxh3.hashChars(title + text);
         long hash2 = xxh3.hashChars(text + timestamp);
         BigInteger hash = new BigInteger(Long.toBinaryString(hash1) + Long.toBinaryString(hash2), 2);
