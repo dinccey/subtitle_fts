@@ -1,5 +1,7 @@
 package org.vaslim.subtitle_fts.database;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import org.vaslim.subtitle_fts.model.indexingdb.IndexFile;
@@ -12,7 +14,7 @@ import java.util.Set;
 public interface IndexFileCategoryRepository extends JpaRepository<IndexFileCategory, Long> {
     Set<IndexFileCategory> findAllByFileDeletedIsTrue();
 
-    Set<IndexFileCategory> findIndexFileByProcessedIsFalse();
+    Page<IndexFileCategory> findIndexFileByProcessedIsFalse(Pageable pageable);
 
     Optional<IndexFileCategory> findByFilePath(String filePath);
 }

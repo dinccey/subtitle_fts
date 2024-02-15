@@ -10,6 +10,9 @@ import net.openhft.hashing.LongHashFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.IndexOperations;
 import org.springframework.data.elasticsearch.core.document.Document;
@@ -140,15 +143,26 @@ public class IndexServiceImpl implements IndexService {
         }
 
         indexFileCategoryRepository.flush();
-        indexFileCategoryRepository.findIndexFileByProcessedIsFalse().forEach(indexFileCategory -> {
-            CategoryInfo categoryInfo = populateCategoryInfo(indexFileCategory.getFilePath());
-            indexFileCategory.setDocumentId(categoryInfo.getId());
-            categoryInfoRepository.save(categoryInfo);
-            indexFileCategory.setProcessed(true);
-            indexFileCategory.setDocumentId(categoryInfo.getId());
-            indexFileCategoryRepository.save(indexFileCategory);
-        });
-        indexFileCategoryRepository.flush();
+
+        int pageNumber = 0;
+        int pageSize = 50;
+        Pageable pageable = PageRequest.of(pageNumber, pageSize);
+
+        Page<IndexFileCategory> page;
+        do {
+            page = indexFileCategoryRepository.findIndexFileByProcessedIsFalse(pageable);
+            for (IndexFileCategory indexFileCategory : page) {
+                CategoryInfo categoryInfo = populateCategoryInfo(indexFileCategory.getFilePath());
+                indexFileCategory.setDocumentId(categoryInfo.getId());
+                categoryInfoRepository.save(categoryInfo);
+                indexFileCategory.setProcessed(true);
+                indexFileCategory.setDocumentId(categoryInfo.getId());
+                indexFileCategoryRepository.save(indexFileCategory);
+                indexFileCategoryRepository.flush();
+            }
+            pageable = pageable.next();
+        } while (page.hasNext());
+
     }
 
     private void indexSubtitles() {
@@ -177,31 +191,42 @@ public class IndexServiceImpl implements IndexService {
             });
         }
         indexFileRepository.flush();
-        indexFileRepository.findIndexFileByProcessedIsFalse().forEach(indexFile -> {
-            File file = new File(indexFile.getFilePath());
-            Set<IndexItem> indexItems = new HashSet<>();
-            VttObject vttObject;
-            try {
-                vttObject = vttParser.parse(new FileInputStream(file));
-            } catch (IOException | SubtitleParsingException e) {
-                throw new RuntimeException(e);
+
+        int pageNumber = 0;
+        int pageSize = 50;
+        Pageable pageable = PageRequest.of(pageNumber, pageSize);
+
+        Page<IndexFile> page;
+        do {
+            page = indexFileRepository.findIndexFileByProcessedIsFalse(pageable);
+            for (IndexFile indexFile : page) {
+                File file = new File(indexFile.getFilePath());
+                Set<IndexItem> indexItems = new HashSet<>();
+                VttObject vttObject;
+                try {
+                    vttObject = vttParser.parse(new FileInputStream(file));
+                } catch (IOException | SubtitleParsingException e) {
+                    throw new RuntimeException(e);
+                }
+                List<SubtitleCue> subtitleCues = vttObject.getCues();
+                Set<Subtitle> subtitles = new HashSet<>();
+                subtitleCues.forEach(subtitleCue -> {
+                    Subtitle subtitle = populateSubtitle(subtitleCue, file.getPath());
+                    IndexItem indexItem = new IndexItem();
+                    indexItem.setIndexFile(indexFile);
+                    indexItem.setDocumentId(subtitle.getId());
+                    indexItems.add(indexItem);
+                    subtitles.add(subtitle);
+                });
+                indexItemRepository.saveAll(indexItems);
+                subtitleRepository.saveAll(subtitles);
+                indexFile.setIndexItems(indexItems);
+                indexFile.setProcessed(true);
+                indexFileRepository.save(indexFile);
+
             }
-            List<SubtitleCue> subtitleCues = vttObject.getCues();
-            Set<Subtitle> subtitles = new HashSet<>();
-            subtitleCues.forEach(subtitleCue -> {
-                Subtitle subtitle = populateSubtitle(subtitleCue, file.getPath());
-                IndexItem indexItem = new IndexItem();
-                indexItem.setIndexFile(indexFile);
-                indexItem.setDocumentId(subtitle.getId());
-                indexItems.add(indexItem);
-                subtitles.add(subtitle);
-            });
-            indexItemRepository.saveAll(indexItems);
-            subtitleRepository.saveAll(subtitles);
-            indexFile.setIndexItems(indexItems);
-            indexFile.setProcessed(true);
-            indexFileRepository.save(indexFile);
-        });
+            pageable = pageable.next();
+        } while (page.hasNext());
         indexFileRepository.flush();
     }
 
