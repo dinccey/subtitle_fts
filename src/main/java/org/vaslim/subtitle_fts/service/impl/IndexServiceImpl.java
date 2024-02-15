@@ -218,7 +218,7 @@ public class IndexServiceImpl implements IndexService {
                     indexItems.add(indexItem);
                     subtitles.add(subtitle);
                 });
-                //indexItemRepository.saveAll(indexItems);
+                indexItemRepository.saveAll(indexItems);
                 subtitleRepository.saveAll(subtitles);
                 indexFile.setIndexItems(indexItems);
                 indexFile.setProcessed(true);
