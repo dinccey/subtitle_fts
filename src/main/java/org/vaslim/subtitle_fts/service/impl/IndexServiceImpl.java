@@ -36,6 +36,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.security.MessageDigest;
@@ -391,9 +392,12 @@ public class IndexServiceImpl implements IndexService {
 
     public String generateId(String title, String text, String timestamp) {
         LongHashFunction xxh3 = LongHashFunction.xx();
-        long hash = xxh3.hashChars(title + text + timestamp);
-        return Long.toHexString(hash);
+        long hash1 = xxh3.hashChars(title + text);
+        long hash2 = xxh3.hashChars(text + timestamp);
+        BigInteger hash = new BigInteger(Long.toBinaryString(hash1) + Long.toBinaryString(hash2), 2);
+        return hash.toString(16);
     }
+
 
     public static String generateXXH3(File file) throws IOException {
         LongHashFunction xxh3 = LongHashFunction.xx();
