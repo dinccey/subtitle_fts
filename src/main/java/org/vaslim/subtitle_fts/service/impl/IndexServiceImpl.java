@@ -251,16 +251,20 @@ public class IndexServiceImpl implements IndexService {
         String oldHash = indexFile.getFileHash();
         indexFile.setFileHash(generateXXH3(file));
         indexFile.setFileChanged(false);
-        if(!indexFile.getFileHash().equals(oldHash)){
+        if(oldHash != null && !indexFile.getFileHash().equals(oldHash)){
             indexFile.setFileChanged(true);
         }
-        indexFile.setFilePath(file.getAbsolutePath());
+        if(indexFile.getFilePath() == null){
+            indexFile.setFilePath(file.getAbsolutePath());
+        }
         return indexFile;
     }
     private IndexFileCategory getIndexFileCategoryUpdated(File file) throws IOException, NoSuchAlgorithmException {
         IndexFileCategory indexFile = indexFileCategoryRepository.findByFilePath(file.getAbsolutePath()).orElse(new IndexFileCategory());
         indexFile.setFileDeleted(false);
-        indexFile.setFilePath(file.getAbsolutePath());
+        if(indexFile.getFilePath() == null){
+            indexFile.setFilePath(file.getAbsolutePath());
+        }
         return indexFile;
     }
     private void createIndexIfNotExists(String indexName, Map<String,Object> mappings) {
