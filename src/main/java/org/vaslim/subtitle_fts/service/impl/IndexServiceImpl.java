@@ -257,7 +257,6 @@ public class IndexServiceImpl implements IndexService {
 
     private IndexFile getIndexFileUpdated(File file) throws IOException, NoSuchAlgorithmException {
         IndexFile indexFile = indexFileRepository.findByFilePath(file.getAbsolutePath()).orElse(new IndexFile());
-        indexFile.setFileDeleted(false);
         String oldHash = indexFile.getFileHash();
         indexFile.setFileHash(generateXXH3(file));
         indexFile.setFileChanged(false);
@@ -274,7 +273,6 @@ public class IndexServiceImpl implements IndexService {
     }
     private IndexFileCategory getIndexFileCategoryUpdated(File file) throws IOException, NoSuchAlgorithmException {
         IndexFileCategory indexFile = indexFileCategoryRepository.findByFilePath(file.getAbsolutePath()).orElse(new IndexFileCategory());
-        indexFile.setFileDeleted(false);
         if(indexFile.getFilePath() == null){
             indexFile.setFilePath(file.getAbsolutePath());
         }
