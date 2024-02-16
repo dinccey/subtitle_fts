@@ -130,16 +130,6 @@ public class IndexServiceImpl implements IndexService {
                     } catch (IOException | NoSuchAlgorithmException e) {
                         throw new RuntimeException(e);
                     }
-                    //currently there is no need to check for this
-//                    if(indexFileCategory.isFileChanged()){
-//                        indexFileCategory.setProcessed(false);
-//                        categoryInfoRepository.delete(indexFileCategoryToCategory(indexFileCategory.getDocumentId()));
-//                        indexFileCategoryRepository.save(indexFileCategory);
-//                    }
-                    if(indexFileCategory.isFileDeleted()){
-                        categoryInfoRepository.delete(indexFileCategoryToCategory(indexFileCategory.getDocumentId()));
-                        indexFileCategoryRepository.delete(indexFileCategory);
-                    }
                 }
             });
         }
@@ -189,13 +179,6 @@ public class IndexServiceImpl implements IndexService {
                         indexFileRepository.save(indexFile);
 
                     }
-                    if(indexFile.isFileDeleted()){
-                        subtitleRepository.deleteAll(indexItemsToSubtitles(indexFile.getIndexItems()));
-                        indexItemRepository.deleteAll(indexFile.getIndexItems());
-                        indexFileRepository.delete(indexFile);
-                        logger.info("Deleted file " + indexFile.getFilePath());
-                    }
-
                 }
             });
         }
@@ -455,21 +438,22 @@ public class IndexServiceImpl implements IndexService {
             long startTime = System.currentTimeMillis();
             indexFileRepository.findAll().forEach(indexFile -> {
                 if (!Files.exists(java.nio.file.Paths.get(indexFile.getFilePath()))) {
-                    indexFile.setFileDeleted(true);
-                    indexFileRepository.save(indexFile);
+                    subtitleRepository.deleteAll(indexItemsToSubtitles(indexFile.getIndexItems()));
+                    indexFileRepository.delete(indexFile);
+                    indexItemRepository.deleteAll(indexFile.getIndexItems());
                     count.getAndIncrement();
                 }
             });
             long endTime = System.currentTimeMillis();
-            logger.info("Subtitle database cleanup time " + (endTime - startTime) / 1000 + ", marked for deletion: " + count.get());
+            logger.info("Subtitle database cleanup time " + (endTime - startTime) / 1000 + ", Deleted: " + count.get());
 
             startTime = System.currentTimeMillis();
 
             count.set(0);
             indexFileCategoryRepository.findAll().forEach(indexFileCategory -> {
                 if (!Files.exists(java.nio.file.Paths.get(indexFileCategory.getFilePath()))) {
-                    indexFileCategory.setFileDeleted(true);
-                    indexFileCategoryRepository.save(indexFileCategory);
+                    categoryInfoRepository.delete(indexFileCategoryToCategory(indexFileCategory.getDocumentId()));
+                    indexFileCategoryRepository.delete(indexFileCategory);
                     count.getAndIncrement();
                 }
                 else {
@@ -480,7 +464,7 @@ public class IndexServiceImpl implements IndexService {
             indexFileRepository.flush();
             indexFileCategoryRepository.flush();
             endTime = System.currentTimeMillis();
-            logger.info("Category database cleanup time seconds: " + (endTime - startTime) / 1000 + ", marked for deletion: " + count.get());
+            logger.info("Category database cleanup time seconds: " + (endTime - startTime) / 1000 + ", Deleted: " + count.get());
         } catch (Exception e){
             e.printStackTrace();
             logger.error("Cleanup failed: " + e.getMessage());
