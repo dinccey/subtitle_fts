@@ -439,8 +439,8 @@ public class IndexServiceImpl implements IndexService {
             indexFileRepository.findAll().forEach(indexFile -> {
                 if (!Files.exists(java.nio.file.Paths.get(indexFile.getFilePath()))) {
                     subtitleRepository.deleteAll(indexItemsToSubtitles(indexFile.getIndexItems()));
-                    indexFileRepository.delete(indexFile);
                     indexItemRepository.deleteAll(indexFile.getIndexItems());
+                    indexFileRepository.delete(indexFile);
                     count.getAndIncrement();
                 }
             });
