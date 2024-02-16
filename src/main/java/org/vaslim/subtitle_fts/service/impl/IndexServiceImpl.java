@@ -463,6 +463,8 @@ public class IndexServiceImpl implements IndexService {
             indexItemRepository.flush();
             indexFileRepository.flush();
             indexFileCategoryRepository.flush();
+            elasticsearchOperations.indexOps(IndexCoordinates.of(Constants.INDEX_SUBTITLES)).refresh();
+            elasticsearchOperations.indexOps(IndexCoordinates.of(Constants.INDEX_CATEGORY_INFO)).refresh();
             endTime = System.currentTimeMillis();
             logger.info("Category database cleanup time seconds: " + (endTime - startTime) / 1000 + ", Deleted: " + count.get());
         } catch (Exception e){
