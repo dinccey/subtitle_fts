@@ -6,6 +6,7 @@ import fr.noop.subtitle.model.SubtitleCue;
 import fr.noop.subtitle.model.SubtitleParsingException;
 import fr.noop.subtitle.vtt.VttObject;
 import fr.noop.subtitle.vtt.VttParser;
+import jakarta.persistence.EntityManager;
 import net.openhft.hashing.LongHashFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,6 +68,7 @@ public class IndexServiceImpl implements IndexService {
     private final IndexFileCategoryRepository indexFileCategoryRepository;
 
     private final IndexItemRepository indexItemRepository;
+    private final EntityManager entityManager;
 
     @Value("${files.path.root}")
     private String path;
@@ -77,7 +79,7 @@ public class IndexServiceImpl implements IndexService {
     @Value("${subtitle_index.file.extension}")
     private String subtitleIndexFileExtension;
 
-    public IndexServiceImpl(ElasticsearchClient elasticsearchClient, ElasticsearchOperations elasticsearchOperations, ElasticsearchTransport elasticsearchTransport, FileService fileService, SubtitleRepository subtitleRepository, CategoryInfoRepository categoryInfoRepository, VttParser vttParser, IndexFileRepository indexFileRepository, IndexFileCategoryRepository indexFileCategoryRepository, IndexItemRepository indexItemRepository) {
+    public IndexServiceImpl(ElasticsearchClient elasticsearchClient, ElasticsearchOperations elasticsearchOperations, ElasticsearchTransport elasticsearchTransport, FileService fileService, SubtitleRepository subtitleRepository, CategoryInfoRepository categoryInfoRepository, VttParser vttParser, IndexFileRepository indexFileRepository, IndexFileCategoryRepository indexFileCategoryRepository, IndexItemRepository indexItemRepository, EntityManager entityManager) {
         this.elasticsearchClient = elasticsearchClient;
         this.elasticsearchOperations = elasticsearchOperations;
         this.elasticsearchTransport = elasticsearchTransport;
@@ -88,6 +90,7 @@ public class IndexServiceImpl implements IndexService {
         this.indexFileRepository = indexFileRepository;
         this.indexFileCategoryRepository = indexFileCategoryRepository;
         this.indexItemRepository = indexItemRepository;
+        this.entityManager = entityManager;
     }
 
     @Override
@@ -227,6 +230,7 @@ public class IndexServiceImpl implements IndexService {
                 indexFileRepository.save(indexFile);
                 subtitles.clear();
                 indexItemRepository.flush();
+                entityManager.clear();
             }
 
         } while (page.hasNext());
