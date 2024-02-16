@@ -417,7 +417,7 @@ public class IndexServiceImpl implements IndexService {
         return stringBuffer.toString();
     }
 
-
+    @Transactional
     @Override
     public void deleteIndex() {
         IndexOperations indexOpsSubtitles = elasticsearchOperations.indexOps(IndexCoordinates.of(Constants.INDEX_SUBTITLES));
@@ -436,7 +436,7 @@ public class IndexServiceImpl implements IndexService {
 
     }
 
-    @Transactional
+
     @Override
     public void cleanupIndex() {
         try {
