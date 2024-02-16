@@ -41,6 +41,7 @@ import java.math.BigInteger;
 import java.nio.file.Files;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
 public class IndexServiceImpl implements IndexService {
@@ -450,29 +451,36 @@ public class IndexServiceImpl implements IndexService {
     @Override
     public void cleanupIndex() {
         try {
+            AtomicInteger count = new AtomicInteger();
             long startTime = System.currentTimeMillis();
             indexFileRepository.findAll().forEach(indexFile -> {
                 if (!Files.exists(java.nio.file.Paths.get(indexFile.getFilePath()))) {
                     indexFile.setFileDeleted(true);
                     indexFileRepository.save(indexFile);
+                    count.getAndIncrement();
                 }
             });
             long endTime = System.currentTimeMillis();
-            logger.info("Subtitle database cleanup time " + (endTime - startTime) / 1000);
+            logger.info("Subtitle database cleanup time " + (endTime - startTime) / 1000 + ", marked for deletion: " + count.get());
 
             startTime = System.currentTimeMillis();
 
+            count.set(0);
             indexFileCategoryRepository.findAll().forEach(indexFileCategory -> {
                 if (!Files.exists(java.nio.file.Paths.get(indexFileCategory.getFilePath()))) {
                     indexFileCategory.setFileDeleted(true);
                     indexFileCategoryRepository.save(indexFileCategory);
+                    count.getAndIncrement();
                 }
                 else {
 
                 }
             });
+            indexItemRepository.flush();
+            indexFileRepository.flush();
+            indexFileCategoryRepository.flush();
             endTime = System.currentTimeMillis();
-            logger.info("Category database cleanup time seconds: " + (endTime - startTime) / 1000);
+            logger.info("Category database cleanup time seconds: " + (endTime - startTime) / 1000 + ", marked for deletion: " + count.get());
         } catch (Exception e){
             e.printStackTrace();
             logger.error("Cleanup failed: " + e.getMessage());
