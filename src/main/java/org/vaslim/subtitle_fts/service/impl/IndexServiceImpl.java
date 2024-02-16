@@ -230,12 +230,7 @@ public class IndexServiceImpl implements IndexService {
                     subtitles.add(subtitle);
                 });
                 indexItemRepository.saveAll(indexItems);
-                try{
-                    subtitleRepository.saveAll(subtitles);
-                }catch (Exception e){
-                    System.out.println(e.getMessage());
-                    indexItemRepository.deleteIndexItemsByDocumentId(indexItems.stream().map(IndexItem::getDocumentId).collect(Collectors.toSet()));
-                }
+                subtitleRepository.saveAll(subtitles);
                 indexFile.setIndexItems(indexItems);
                 indexFile.setProcessed(true);
                 indexFileRepository.save(indexFile);
