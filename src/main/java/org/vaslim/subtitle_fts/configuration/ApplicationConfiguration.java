@@ -11,4 +11,5 @@ public class ApplicationConfiguration {
     public VttParser vttParser() {
         return new VttParser("utf-8");
     }
+
 }
