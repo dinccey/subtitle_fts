@@ -184,10 +184,13 @@ public class IndexServiceImpl implements IndexService {
                     if(indexFile.isFileChanged()){
                         indexFile.setProcessed(false);
                         subtitleRepository.deleteAll(indexItemsToSubtitles(indexFile.getIndexItems()));
+                        indexItemRepository.deleteAll(indexFile.getIndexItems());
+                        indexFile.getIndexItems().clear();
                         indexFileRepository.save(indexFile);
                     }
                     if(indexFile.isFileDeleted()){
                         subtitleRepository.deleteAll(indexItemsToSubtitles(indexFile.getIndexItems()));
+                        indexItemRepository.deleteAll(indexFile.getIndexItems());
                         indexFileRepository.delete(indexFile);
                     }
 
@@ -275,7 +278,7 @@ public class IndexServiceImpl implements IndexService {
         if(indexFile.getFilePath() == null){
             indexFile.setFilePath(file.getAbsolutePath());
         }
-        if(indexFile.isObjectChanged()){
+        if(indexFile.isObjectChanged() || indexFile.getId() == null){
             indexFileCategoryRepository.save(indexFile);
         }
         return indexFile;
