@@ -19,7 +19,6 @@ import org.springframework.data.elasticsearch.core.IndexOperations;
 import org.springframework.data.elasticsearch.core.document.Document;
 import org.springframework.data.elasticsearch.core.mapping.IndexCoordinates;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.vaslim.subtitle_fts.constants.Constants;
 import org.vaslim.subtitle_fts.database.IndexFileCategoryRepository;
 import org.vaslim.subtitle_fts.database.IndexFileRepository;
@@ -39,13 +38,9 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
-import java.util.stream.Collectors;
-import java.util.zip.CRC32;
 
 @Service
 public class IndexServiceImpl implements IndexService {
@@ -189,6 +184,7 @@ public class IndexServiceImpl implements IndexService {
                         subtitleRepository.deleteAll(indexItemsToSubtitles(indexFile.getIndexItems()));
                         indexItemRepository.deleteAll(indexFile.getIndexItems());
                         indexFile.getIndexItems().clear();
+                        indexFile.setFileChanged(false);
                         indexFileRepository.save(indexFile);
                     }
                     if(indexFile.isFileDeleted()){
