@@ -420,6 +420,9 @@ public class IndexServiceImpl implements IndexService {
     @Transactional
     @Override
     public void deleteIndex() {
+        indexItemRepository.deleteAllEntities();
+        indexFileRepository.deleteAllEntities();
+        indexFileCategoryRepository.deleteAllEntities();
         IndexOperations indexOpsSubtitles = elasticsearchOperations.indexOps(IndexCoordinates.of(Constants.INDEX_SUBTITLES));
         if (indexOpsSubtitles.exists()) {
             indexOpsSubtitles.delete();
@@ -429,11 +432,6 @@ public class IndexServiceImpl implements IndexService {
         if (indexOpsCategoryInfo.exists()) {
             indexOpsCategoryInfo.delete();
         }
-
-        indexItemRepository.deleteAllEntities();
-        indexFileRepository.deleteAllEntities();
-        indexFileCategoryRepository.deleteAllEntities();
-
     }
 
 
