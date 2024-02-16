@@ -47,7 +47,7 @@ public class IndexFileCategory {
     }
 
     public void setFilePath(String filePath) {
-        if(filePath != null && !filePath.equals(this.fileHash)){
+        if(filePath != null && !filePath.equals(this.filePath)){
             setObjectChanged();
         }
         this.filePath = filePath;
