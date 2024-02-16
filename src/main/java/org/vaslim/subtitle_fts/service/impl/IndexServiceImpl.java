@@ -19,6 +19,7 @@ import org.springframework.data.elasticsearch.core.IndexOperations;
 import org.springframework.data.elasticsearch.core.document.Document;
 import org.springframework.data.elasticsearch.core.mapping.IndexCoordinates;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.vaslim.subtitle_fts.constants.Constants;
 import org.vaslim.subtitle_fts.database.IndexFileCategoryRepository;
 import org.vaslim.subtitle_fts.database.IndexFileRepository;
@@ -43,6 +44,7 @@ import java.nio.file.Files;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.zip.CRC32;
 
 @Service
@@ -168,6 +170,7 @@ public class IndexServiceImpl implements IndexService {
 
     }
 
+    @Transactional
     private void indexSubtitles() {
         List<File> files;
         while(!(files = fileService.getNext()).isEmpty()){
@@ -227,7 +230,12 @@ public class IndexServiceImpl implements IndexService {
                     subtitles.add(subtitle);
                 });
                 indexItemRepository.saveAll(indexItems);
-                subtitleRepository.saveAll(subtitles);
+                try{
+                    subtitleRepository.saveAll(subtitles);
+                }catch (Exception e){
+                    System.out.println(e.getMessage());
+                    indexItemRepository.deleteIndexItemsByDocumentId(indexItems.stream().map(IndexItem::getDocumentId).collect(Collectors.toSet()));
+                }
                 indexFile.setIndexItems(indexItems);
                 indexFile.setProcessed(true);
                 indexFileRepository.save(indexFile);
