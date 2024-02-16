@@ -428,9 +428,9 @@ public class IndexServiceImpl implements IndexService {
             indexOpsCategoryInfo.delete();
         }
 
-        indexItemRepository.deleteAll();
-        indexFileRepository.deleteAll();
-        indexFileCategoryRepository.deleteAll();
+        indexItemRepository.deleteAllEntities();
+        indexFileRepository.deleteAllEntities();
+        indexFileCategoryRepository.deleteAllEntities();
 
     }
 

@@ -15,5 +15,9 @@ public interface IndexItemRepository extends JpaRepository<IndexItem, Long> {
     @Query("DELETE FROM IndexItem i WHERE i.documentId IN :documentIds")
     void deleteIndexItemsByDocumentId(@Param("documentIds") Set<String> documentIds);
 
+    @Modifying
+    @Query("DELETE FROM IndexItem ")
+    void deleteAllEntities();
+
 }
 
