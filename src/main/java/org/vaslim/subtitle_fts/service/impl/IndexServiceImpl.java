@@ -187,11 +187,13 @@ public class IndexServiceImpl implements IndexService {
                         indexFile.getIndexItems().clear();
                         indexFile.setFileChanged(false);
                         indexFileRepository.save(indexFile);
+
                     }
                     if(indexFile.isFileDeleted()){
                         subtitleRepository.deleteAll(indexItemsToSubtitles(indexFile.getIndexItems()));
                         indexItemRepository.deleteAll(indexFile.getIndexItems());
                         indexFileRepository.delete(indexFile);
+                        logger.info("Deleted file " + indexFile.getFilePath());
                     }
 
                 }
