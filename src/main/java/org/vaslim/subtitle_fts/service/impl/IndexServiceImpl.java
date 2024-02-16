@@ -170,7 +170,7 @@ public class IndexServiceImpl implements IndexService {
 
     }
 
-    @Transactional
+
     private void indexSubtitles() {
         List<File> files;
         while(!(files = fileService.getNext()).isEmpty()){
