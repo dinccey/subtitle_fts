@@ -23,6 +23,6 @@ public class IndexingJob {
 
     @Scheduled(cron = "${job.cleanup.cron}")
     public void runDbCleanup() {
-        indexService.runIndexing();
+        indexService.cleanupIndex();
     }
 }
