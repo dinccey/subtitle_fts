@@ -29,7 +29,7 @@ services:
       - ${DATA_BASE_PATH}:/mnt/data #data volume with subtitles
       - certs:/usr/share/ssl_bundle
   mariadb:
-    image: "mariadb:${MARIADB_VERSION}"
+    image: "bitnami/mariadb:latest"
     restart: 'always'
     volumes:
       - mariadbvol:/var/lib/mysql
