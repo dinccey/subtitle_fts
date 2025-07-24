@@ -28,6 +28,18 @@ services:
     volumes:
       - ${DATA_BASE_PATH}:/mnt/data #data volume with subtitles
       - certs:/usr/share/ssl_bundle
+  mariadb:
+    image: "mariadb:${MARIADB_VERSION}"
+    restart: 'always'
+    volumes:
+      - mariadb:${MARIADB_DATA_DIR}
+      - mariadblogs:${MARIADB_LOG_DIR}
+      - /var/docker/mariadb/conf:/etc/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${ADMIN_PASSWORD}
+      MYSQL_DATABASE: ${DATASOURCE_DATABASE}
+      MYSQL_USER: ${DATASOURCE_USERNAME}
+      MYSQL_PASSWORD: ${DATASOURCE_PASSWORD}
   create_certs:
     container_name: create_certs
     image: elasticsearch:8.11.3
@@ -73,4 +85,4 @@ services:
 networks:
   elastic:
 
-volumes: {"esdata", "certs"}
+volumes: {"esdata", "certs","mariadb","mariadblogs"}
