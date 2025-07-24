@@ -28,6 +28,9 @@ services:
     volumes:
       - ${DATA_BASE_PATH}:/mnt/data #data volume with subtitles
       - certs:/usr/share/ssl_bundle
+    #uncomment below for podman RO mounts to avoid selinux issues with bind mount
+    #security_opt:
+     # - label=disable
   mariadb:
     image: "bitnami/mariadb:latest"
     restart: 'always'
