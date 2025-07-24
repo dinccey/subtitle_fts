@@ -6,23 +6,40 @@ services:
     build:
       dockerfile: Dockerfile
     ports:
-      - "8083:8081"
+      - "8081:8081"
     environment:
       - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} #active profile, one of: local, dev, prod
       - JOB_CRON=${JOB_CRON} #cron schedule for automatic run
+      - JOB_CLEANUP_CRON=${JOB_CLEANUP_CRON}
       - ELASTICSEARCH_ADDRESS=${ELASTICSEARCH_ADDRESS}
       - ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME}
       - ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_PASSWORD}
       - FILES_ITERATION_SIZE=${FILES_ITERATION_SIZE} #number of files to index at once, lower values use less memory, higher values increase performance
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
       - JWT_SECRET=${JWT_SECRET} #change this
-    restart: on-failure
+      - CATEGORY_INFO_INDEX_FILE_EXTENSION=${CATEGORY_INFO_INDEX_FILE_EXTENSION} #file extension used to index videos for information, can be .mp4, .vtt or something else if needed, parses path for info
+      - DATASOURCE_URL=${DATASOURCE_URL}
+      - DATASOURCE_USERNAME=${DATASOURCE_USERNAME}
+      - DATASOURCE_PASSWORD=${DATASOURCE_PASSWORD} #database is used to track what new stuff needs to be indexed and old stuff deleted from index
+    restart: always
     #depends_on:
       #elasticsearch:
         #condition: service_healthy
     volumes:
       - ${DATA_BASE_PATH}:/mnt/data #data volume with subtitles
       - certs:/usr/share/ssl_bundle
+  mariadb:
+    image: "mariadb:${MARIADB_VERSION}"
+    restart: 'always'
+    volumes:
+      - mariadb:${MARIADB_DATA_DIR}
+      - mariadblogs:${MARIADB_LOG_DIR}
+      - /var/docker/mariadb/conf:/etc/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${ADMIN_PASSWORD}
+      MYSQL_DATABASE: ${DATASOURCE_DATABASE}
+      MYSQL_USER: ${DATASOURCE_USERNAME}
+      MYSQL_PASSWORD: ${DATASOURCE_PASSWORD}
   create_certs:
     container_name: create_certs
     image: elasticsearch:8.11.3
@@ -40,6 +57,7 @@ services:
   elasticsearch:
     image: elasticsearch:8.11.3
     container_name: elasticsearch01
+    restart: always
     networks:
       - elastic
     ports:
@@ -47,7 +65,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 3G
+          memory: 5G
     #healthcheck:
     #  test: [ "CMD", "curl", "-f", "http://localhost:9200" ]
     #  interval: 30s
@@ -67,4 +85,4 @@ services:
 networks:
   elastic:
 
-volumes: {"esdata", "certs"}
+volumes: {"esdata", "certs","mariadb","mariadblogs"}

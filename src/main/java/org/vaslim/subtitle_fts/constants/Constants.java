@@ -15,7 +15,6 @@ public interface Constants
         String HEADER_STRING = "Authorization";
     }
 
-    interface Files {
-        List<String> transcribeExtensions = List.of(".srt",".vtt",".txt",".json",".tsv");
-    }
+    String INDEX_SUBTITLES= "subtitles";
+    String INDEX_CATEGORY_INFO = "category_info";
 }

@@ -2,7 +2,7 @@ package org.vaslim.subtitle_fts.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.vaslim.subtitle_fts.model.Subtitle;
+import org.vaslim.subtitle_fts.dto.MediaRecordDTO;
 import org.vaslim.subtitle_fts.service.SubtitleService;
 
 import java.util.List;
@@ -18,12 +18,12 @@ public class SearchController {
     }
 
     @GetMapping("/fuzzy")
-    public ResponseEntity<List<Subtitle>> getVideoByQueryFuzzy(@RequestParam String query){
-        return ResponseEntity.ok(subtitleService.findVideosByTitleOrSubtitleContentFuzzy(query));
+    public ResponseEntity<List<MediaRecordDTO>> getVideoByQueryFuzzy(@RequestParam(name = "maxResults", defaultValue = "600") Integer maxResults, @RequestParam String query){
+        return ResponseEntity.ok(subtitleService.findVideosByTitleOrSubtitleContentFuzzy(query, maxResults));
     }
 
     @GetMapping("/exact")
-    public ResponseEntity<List<Subtitle>> getVideoByQueryExact(@RequestParam String query){
-        return ResponseEntity.ok(subtitleService.findVideosByTitleOrSubtitleContentFuzzy(query));
+    public ResponseEntity<List<MediaRecordDTO>> getVideoByQueryExact(@RequestParam(name = "maxResults", defaultValue = "600") Integer maxResults,@RequestParam(name = "query") String query, @RequestParam("categoryInfo") String categoryInfo){
+        return ResponseEntity.ok(subtitleService.findVideosByTitleOrSubtitleContentExact(query, categoryInfo, maxResults));
     }
 }

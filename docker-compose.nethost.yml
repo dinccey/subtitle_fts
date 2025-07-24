@@ -9,13 +9,18 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} #active profile, one of: local, dev, prod
       - JOB_CRON=${JOB_CRON} #cron schedule for automatic run
+      - JOB_CLEANUP_CRON=${JOB_CLEANUP_CRON}
       - ELASTICSEARCH_ADDRESS=${ELASTICSEARCH_ADDRESS}
       - ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME}
       - ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_PASSWORD}
       - FILES_ITERATION_SIZE=${FILES_ITERATION_SIZE} #number of files to index at once, lower values use less memory, higher values increase performance
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
       - JWT_SECRET=${JWT_SECRET} #change this
-    restart: on-failure
+      - CATEGORY_INFO_INDEX_FILE_EXTENSION=${CATEGORY_INFO_INDEX_FILE_EXTENSION} #file extension used to index videos for information, can be .mp4, .vtt or something else if needed, parses path for info
+      - DATASOURCE_URL=${DATASOURCE_URL}
+      - DATASOURCE_USERNAME=${DATASOURCE_USERNAME}
+      - DATASOURCE_PASSWORD=${DATASOURCE_PASSWORD} #database is used to track what new stuff needs to be indexed and old stuff deleted from index
+    restart: always
     #depends_on:
       #elasticsearch:
         #condition: service_healthy
@@ -40,10 +45,11 @@ services:
     image: elasticsearch:8.11.3
     container_name: elasticsearch01
     network_mode: host
+    restart: always
     deploy:
       resources:
         limits:
-          memory: 3G
+          memory: 5G
     #healthcheck:
     #  test: [ "CMD", "curl", "-f", "http://localhost:9200" ]
     #  interval: 30s
