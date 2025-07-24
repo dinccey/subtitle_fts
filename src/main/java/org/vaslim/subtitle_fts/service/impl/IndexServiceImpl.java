@@ -103,14 +103,23 @@ public class IndexServiceImpl implements IndexService {
         try {
             long startTime = System.currentTimeMillis();
 
-            indexCategoryInfo();
+            try {
+                indexCategoryInfo();
+            } catch (Exception e){
+                logger.error(e.getMessage());
+            }
 
             long endTime = System.currentTimeMillis();
             logger.info("CategoryInfo indexing time seconds " + (endTime - startTime) / 1000);
             fileService.reset(); //reset iterator
             startTime = System.currentTimeMillis();
 
-            indexSubtitles();
+            logger.info("Starting subtitle indexing..");
+            try {
+                indexSubtitles();
+            } catch (Exception e){
+                logger.error(e.getMessage());
+            }
             endTime = System.currentTimeMillis();
             logger.info("Subtitle indexing time seconds: " + (endTime - startTime) / 1000);
             elasticsearchOperations.indexOps(IndexCoordinates.of(Constants.INDEX_SUBTITLES)).refresh();
