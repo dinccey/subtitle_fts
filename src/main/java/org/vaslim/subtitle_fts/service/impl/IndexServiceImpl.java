@@ -213,7 +213,7 @@ public class IndexServiceImpl implements IndexService {
                 try {
                     vttObject = vttParser.parse(new FileInputStream(file));
                 } catch (IOException | SubtitleParsingException e) {
-                    throw new RuntimeException(e);
+                    throw new RuntimeException("Exception with file: " + file.getAbsolutePath(), e);
                 }
                 List<SubtitleCue> subtitleCues = vttObject.getCues();
 
