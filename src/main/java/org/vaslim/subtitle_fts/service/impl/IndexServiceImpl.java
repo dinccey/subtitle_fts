@@ -233,7 +233,7 @@ public class IndexServiceImpl implements IndexService {
                     indexItemRepository.flush();
                     entityManager.clear();
 
-                } catch (IOException | SubtitleParsingException e) {
+                } catch (IOException | SubtitleParsingException | IndexOutOfBoundsException e) {
                     logger.error("Exception with file:{} : {}", file, e.getMessage());
                 }
 
