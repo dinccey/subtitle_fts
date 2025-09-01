@@ -118,8 +118,8 @@ public class IndexServiceImpl implements IndexService {
             try {
                 indexSubtitles();
             } catch (Exception e){
-                logger.error(e.getMessage());
                 e.printStackTrace();
+                logger.error(e.getMessage());
             }
             endTime = System.currentTimeMillis();
             logger.info("Subtitle indexing time seconds: {}", (endTime - startTime) / 1000);
@@ -182,6 +182,7 @@ public class IndexServiceImpl implements IndexService {
                         indexFile = getIndexFileUpdated(file);
 
                     } catch (IOException | NoSuchAlgorithmException e) {
+                        e.printStackTrace();
                         throw new RuntimeException(e);
                     }
                     if(indexFile.isFileChanged()){
