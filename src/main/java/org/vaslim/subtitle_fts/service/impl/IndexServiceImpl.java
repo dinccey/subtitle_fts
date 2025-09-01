@@ -212,27 +212,30 @@ public class IndexServiceImpl implements IndexService {
                 VttObject vttObject;
                 try {
                     vttObject = vttParser.parse(new FileInputStream(file));
-                } catch (IOException | SubtitleParsingException e) {
-                    throw new RuntimeException("Exception with file: " + file.getAbsolutePath(), e);
-                }
-                List<SubtitleCue> subtitleCues = vttObject.getCues();
 
-                subtitleCues.forEach(subtitleCue -> {
-                    Subtitle subtitle = populateSubtitle(subtitleCue, file.getPath());
-                    IndexItem indexItem = new IndexItem();
-                    indexItem.setIndexFile(indexFile);
-                    indexItem.setDocumentId(subtitle.getId());
-                    indexItems.add(indexItem);
-                    subtitles.add(subtitle);
-                });
-                indexItemRepository.saveAll(indexItems);
-                subtitleRepository.saveAll(subtitles);
-                indexFile.setIndexItems(indexItems);
-                indexFile.setProcessed(true);
-                indexFileRepository.save(indexFile);
-                subtitles.clear();
-                indexItemRepository.flush();
-                entityManager.clear();
+                    List<SubtitleCue> subtitleCues = vttObject.getCues();
+
+                    subtitleCues.forEach(subtitleCue -> {
+                        Subtitle subtitle = populateSubtitle(subtitleCue, file.getPath());
+                        IndexItem indexItem = new IndexItem();
+                        indexItem.setIndexFile(indexFile);
+                        indexItem.setDocumentId(subtitle.getId());
+                        indexItems.add(indexItem);
+                        subtitles.add(subtitle);
+                    });
+                    indexItemRepository.saveAll(indexItems);
+                    subtitleRepository.saveAll(subtitles);
+                    indexFile.setIndexItems(indexItems);
+                    indexFile.setProcessed(true);
+                    indexFileRepository.save(indexFile);
+                    subtitles.clear();
+                    indexItemRepository.flush();
+                    entityManager.clear();
+
+                } catch (IOException | SubtitleParsingException e) {
+                    logger.error("Exception with file:{} : {}", file, e.getMessage());
+                }
+
             }
 
         } while (page.hasNext());
