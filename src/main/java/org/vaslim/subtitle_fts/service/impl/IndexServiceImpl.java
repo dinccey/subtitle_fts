@@ -110,7 +110,7 @@ public class IndexServiceImpl implements IndexService {
             }
 
             long endTime = System.currentTimeMillis();
-            logger.info("CategoryInfo indexing time seconds " + (endTime - startTime) / 1000);
+            logger.info("CategoryInfo indexing time seconds {}", (endTime - startTime) / 1000);
             fileService.reset(); //reset iterator
             startTime = System.currentTimeMillis();
 
@@ -119,9 +119,10 @@ public class IndexServiceImpl implements IndexService {
                 indexSubtitles();
             } catch (Exception e){
                 logger.error(e.getMessage());
+                e.printStackTrace();
             }
             endTime = System.currentTimeMillis();
-            logger.info("Subtitle indexing time seconds: " + (endTime - startTime) / 1000);
+            logger.info("Subtitle indexing time seconds: {}", (endTime - startTime) / 1000);
             elasticsearchOperations.indexOps(IndexCoordinates.of(Constants.INDEX_SUBTITLES)).refresh();
             elasticsearchOperations.indexOps(IndexCoordinates.of(Constants.INDEX_CATEGORY_INFO)).refresh();
         } finally {
@@ -362,11 +363,10 @@ public class IndexServiceImpl implements IndexService {
     }
 
     private String getCategoryInfo(String subtitlePath) {
-        String categoryInfo = subtitlePath
+        return subtitlePath
                 .replaceAll("/", " ")
                 .replaceAll(categoryInfoIndexFileExtension,"")
                 .replaceAll("_"," ");
-        return categoryInfo;
     }
 
     public double convertTimestampToSeconds(String timestamp) {
@@ -480,7 +480,7 @@ public class IndexServiceImpl implements IndexService {
             logger.info("Category database cleanup time seconds: " + (endTime - startTime) / 1000 + ", Deleted: " + count.get());
         } catch (Exception e){
             e.printStackTrace();
-            logger.error("Cleanup failed: " + e.getMessage());
+            logger.error("Cleanup failed: {}", e.getMessage());
         }
     }
 
