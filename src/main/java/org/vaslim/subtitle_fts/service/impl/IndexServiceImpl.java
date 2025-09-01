@@ -119,6 +119,7 @@ public class IndexServiceImpl implements IndexService {
                 indexSubtitles();
             } catch (Exception e){
                 logger.error(e.getMessage());
+                e.printStackTrace();
             }
             endTime = System.currentTimeMillis();
             logger.info("Subtitle indexing time seconds: {}", (endTime - startTime) / 1000);
