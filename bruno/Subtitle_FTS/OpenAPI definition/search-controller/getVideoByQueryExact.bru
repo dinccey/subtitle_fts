@@ -1,0 +1,17 @@
+meta {
+  name: getVideoByQueryExact
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/v1/search/exact
+  body: none
+  auth: inherit
+}
+
+params:query {
+  query: 
+  categoryInfo: 
+  ~maxResults: 
+}
