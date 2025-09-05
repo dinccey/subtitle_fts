@@ -83,6 +83,8 @@ public class IndexServiceImpl implements IndexService {
     @Value("${subtitle_index.file.extension}")
     private String subtitleIndexFileExtension;
 
+
+
     public IndexServiceImpl(ElasticsearchClient elasticsearchClient, ElasticsearchOperations elasticsearchOperations, ElasticsearchTransport elasticsearchTransport, FileService fileService, SubtitleRepository subtitleRepository, CategoryInfoRepository categoryInfoRepository, VttParser vttParser, IndexFileRepository indexFileRepository, IndexFileCategoryRepository indexFileCategoryRepository, IndexItemRepository indexItemRepository, EntityManager entityManager) {
         this.elasticsearchClient = elasticsearchClient;
         this.elasticsearchOperations = elasticsearchOperations;
@@ -506,7 +508,26 @@ public class IndexServiceImpl implements IndexService {
         if (indexOpsCategoryInfo.exists()) {
             indexOpsCategoryInfo.delete();
         }
+        createIndexes();
         logger.info("Done.");
+    }
+
+    public void createIndexes() {
+        logger.info("Creating indexes...");
+
+        IndexOperations indexOpsSubtitles = elasticsearchOperations.indexOps(IndexCoordinates.of(Constants.INDEX_SUBTITLES));
+        if (!indexOpsSubtitles.exists()) {
+            indexOpsSubtitles.create(); // creates the index
+            indexOpsSubtitles.putMapping(indexOpsSubtitles.createMapping(Subtitle.class)); // applies mapping
+        }
+
+        IndexOperations indexOpsCategoryInfo = elasticsearchOperations.indexOps(IndexCoordinates.of(Constants.INDEX_CATEGORY_INFO));
+        if (!indexOpsCategoryInfo.exists()) {
+            indexOpsCategoryInfo.create();
+            indexOpsCategoryInfo.putMapping(indexOpsCategoryInfo.createMapping(CategoryInfo.class));
+        }
+
+        logger.info("Indexes created.");
     }
 
 
