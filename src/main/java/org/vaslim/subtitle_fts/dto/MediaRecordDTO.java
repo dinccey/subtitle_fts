@@ -1,13 +1,13 @@
 package org.vaslim.subtitle_fts.dto;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 
 public class MediaRecordDTO {
     private String categoryInfo;
     private String subtitlePath;
+    private LocalDateTime videoDate;
 
     private List<SubtitleDTO> subtitles = new ArrayList<>();
 
@@ -37,5 +37,13 @@ public class MediaRecordDTO {
 
     public void addSubtitle(SubtitleDTO subtitleDTO){
         this.subtitles.add(subtitleDTO);
+    }
+
+    public LocalDateTime getVideoDate() {
+        return videoDate;
+    }
+
+    public void setVideoDate(LocalDateTime videoDate) {
+        this.videoDate = videoDate;
     }
 }

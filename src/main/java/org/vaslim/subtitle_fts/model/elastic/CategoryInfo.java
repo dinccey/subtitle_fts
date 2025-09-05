@@ -6,6 +6,8 @@ import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
 import org.vaslim.subtitle_fts.constants.Constants;
 
+import java.time.LocalDateTime;
+
 @Document(indexName = Constants.INDEX_CATEGORY_INFO)
 public class CategoryInfo {
 
@@ -13,6 +15,10 @@ public class CategoryInfo {
     private String id;
     @Field(type = FieldType.Text, name = "categoryInfo")
     private String categoryInfo;
+    private LocalDateTime videoDate;
+    private String author;
+    private String title;
+    private String videoId;
 
     private String subtitlePath;
 
@@ -38,5 +44,37 @@ public class CategoryInfo {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public LocalDateTime getVideoDate() {
+        return videoDate;
+    }
+
+    public void setVideoDate(LocalDateTime videoDate) {
+        this.videoDate = videoDate;
+    }
+
+    public String getAuthor() {
+        return author;
+    }
+
+    public void setAuthor(String author) {
+        this.author = author;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public String getVideoId() {
+        return videoId;
+    }
+
+    public void setVideoId(String videoId) {
+        this.videoId = videoId;
     }
 }

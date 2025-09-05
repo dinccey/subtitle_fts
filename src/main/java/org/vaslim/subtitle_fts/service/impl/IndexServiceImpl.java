@@ -2,6 +2,8 @@ package org.vaslim.subtitle_fts.service.impl;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.transport.ElasticsearchTransport;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.noop.subtitle.model.SubtitleCue;
 import fr.noop.subtitle.model.SubtitleParsingException;
 import fr.noop.subtitle.vtt.VttObject;
@@ -11,7 +13,6 @@ import net.openhft.hashing.LongHashFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.annotation.Transient;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -19,6 +20,7 @@ import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.IndexOperations;
 import org.springframework.data.elasticsearch.core.document.Document;
 import org.springframework.data.elasticsearch.core.mapping.IndexCoordinates;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.vaslim.subtitle_fts.constants.Constants;
@@ -42,6 +44,8 @@ import java.io.InputStream;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -158,13 +162,23 @@ public class IndexServiceImpl implements IndexService {
         do {
             page = indexFileCategoryRepository.findIndexFileByProcessedIsFalse(pageable);
             for (IndexFileCategory indexFileCategory : page) {
-                CategoryInfo categoryInfo = populateCategoryInfo(indexFileCategory.getFilePath());
-                indexFileCategory.setDocumentId(categoryInfo.getId());
-                categoryInfoRepository.save(categoryInfo);
-                indexFileCategory.setProcessed(true);
-                indexFileCategory.setDocumentId(categoryInfo.getId());
-                indexFileCategoryRepository.save(indexFileCategory);
-                indexFileCategoryRepository.flush();
+                String filePath = indexFileCategory.getFilePath();
+                // 1️⃣ Change extension to .json and read the JSON file
+                String jsonFileName = filePath.replaceFirst("\\.[^.]+$", ".json");
+                ObjectMapper mapper = new ObjectMapper();
+                try{
+                    JsonNode rootNode = mapper.readTree(new File(jsonFileName));
+                    CategoryInfo categoryInfo = populateCategoryInfo(rootNode);
+                    indexFileCategory.setDocumentId(categoryInfo.getId());
+                    categoryInfoRepository.save(categoryInfo);
+                    indexFileCategory.setProcessed(true);
+                    indexFileCategory.setDocumentId(categoryInfo.getId());
+                    indexFileCategoryRepository.save(indexFileCategory);
+                    indexFileCategoryRepository.flush();
+                }catch (Exception e){
+                    logger.error("Error categoryInfo: {}", e.getMessage());
+                }
+
             }
         } while (page.hasNext());
 
@@ -216,8 +230,18 @@ public class IndexServiceImpl implements IndexService {
 
                     List<SubtitleCue> subtitleCues = vttObject.getCues();
 
+                    // 1️⃣ Change extension to .json and read the JSON file
+                    String jsonFileName = file.getPath().replaceFirst("\\.[^.]+$", ".json");
+                    ObjectMapper mapper = new ObjectMapper();
+                    JsonNode rootNode = mapper.readTree(new File(jsonFileName));
+
                     subtitleCues.forEach(subtitleCue -> {
-                        Subtitle subtitle = populateSubtitle(subtitleCue, file.getPath());
+                        Subtitle subtitle = null;
+                        try {
+                            subtitle = populateSubtitle(subtitleCue, rootNode);
+                        } catch (IOException e) {
+                            logger.error("Exception: {}", e.getMessage());
+                        }
                         IndexItem indexItem = new IndexItem();
                         indexItem.setIndexFile(indexFile);
                         indexItem.setDocumentId(subtitle.getId());
@@ -336,13 +360,30 @@ public class IndexServiceImpl implements IndexService {
         return mappings;
     }
 
-    private Subtitle populateSubtitle(SubtitleCue subtitleCue, String fileName) {
+    private Subtitle populateSubtitle(SubtitleCue subtitleCue, JsonNode root) throws IOException {
         Subtitle subtitle = new Subtitle();
-        String subtitlePath = getPath(fileName);
-        String categoryInfo = getCategoryInfo(subtitlePath);
 
-        subtitle.setCategoryInfo(categoryInfo);
-        subtitle.setSubtitlePath(subtitlePath);
+        // categoryInfo → from sql_params.vid_category
+        subtitle.setCategoryInfo(root.path("sql_params").path("vid_category").asText() + " " + root.path("sql_params").path("vid_title").asText());
+
+        // subtitlePath → from target_vtt_filename
+        subtitle.setSubtitlePath(root.path("target_directory_relative").asText() + "/" +root.path("target_vtt_filename").asText());
+
+        // videoDate → from sql_params.date (parse to DateTime)
+        String dateStr = root.path("sql_params").path("date").asText();
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        LocalDateTime dateTime = LocalDateTime.parse(dateStr, fmt);
+        subtitle.setVideoDate(dateTime);
+
+        // author → from sql_params.search_category
+        subtitle.setAuthor(root.path("sql_params").path("search_category").asText());
+
+        // title → from sql_params.vid_title
+        subtitle.setTitle(root.path("sql_params").path("vid_title").asText());
+
+        // videoId → from sql_params.video_id
+        subtitle.setVideoId(root.path("sql_params").path("video_id").asText());
+
         subtitle.setText(subtitleCue.getText());
         subtitle.setTimestamp(convertTimestampToSeconds(subtitleCue.getId().substring(0, subtitleCue.getId().indexOf(" "))));
         subtitle.setId(generateId(subtitle.getSubtitlePath(), subtitle.getText(), String.valueOf(subtitle.getTimestamp())));
@@ -350,10 +391,27 @@ public class IndexServiceImpl implements IndexService {
         return subtitle;
     }
 
-    private CategoryInfo populateCategoryInfo(String filename){
+    private CategoryInfo populateCategoryInfo(JsonNode root){
         CategoryInfo categoryInfo = new CategoryInfo();
-        categoryInfo.setCategoryInfo(getCategoryInfo(getPath(filename)));
-        categoryInfo.setSubtitlePath(getPath(filename));
+
+        // categoryInfo → from sql_params.vid_category
+        categoryInfo.setCategoryInfo(root.path("sql_params").path("vid_category").asText() + " " + root.path("sql_params").path("vid_title").asText());
+
+        // subtitlePath → from target_vtt_filename
+        categoryInfo.setSubtitlePath(root.path("target_directory_relative").asText() + "/" +root.path("target_vtt_filename").asText());
+
+        // videoDate → from sql_params.date (parse to DateTime)
+        String dateStr = root.path("sql_params").path("date").asText();
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        LocalDateTime dateTime = LocalDateTime.parse(dateStr, fmt);
+        categoryInfo.setVideoDate(dateTime);
+
+        // author → from sql_params.search_category
+        categoryInfo.setAuthor(root.path("sql_params").path("search_category").asText());
+
+        // title → from sql_params.vid_title
+        categoryInfo.setTitle(root.path("sql_params").path("vid_title").asText());
+
         categoryInfo.setId(generateId(categoryInfo.getCategoryInfo(),categoryInfo.getSubtitlePath(), ""));
         return categoryInfo;
     }
