@@ -492,7 +492,6 @@ public class IndexServiceImpl implements IndexService {
         return stringBuffer.toString();
     }
 
-    @Transactional
     @Override
     public void deleteIndex() {
         logger.info("Deleting all IndexItems...");
