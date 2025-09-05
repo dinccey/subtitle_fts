@@ -495,12 +495,7 @@ public class IndexServiceImpl implements IndexService {
     @Transactional
     @Override
     public void deleteIndex() {
-        logger.info("Deleting all IndexItems...");
-        indexItemRepository.deleteAllEntities();
-        logger.info("Deleting all IndexFiles...");
-        indexFileRepository.deleteAllEntities();
-        logger.info("Deleting all IndexFileCategories...");
-        indexFileCategoryRepository.deleteAllEntities();
+
         logger.info("Deleting all indexes...");
         IndexOperations indexOpsSubtitles = elasticsearchOperations.indexOps(IndexCoordinates.of(Constants.INDEX_SUBTITLES));
         if (indexOpsSubtitles.exists()) {
