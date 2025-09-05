@@ -21,8 +21,10 @@ import org.springframework.data.elasticsearch.core.IndexOperations;
 import org.springframework.data.elasticsearch.core.document.Document;
 import org.springframework.data.elasticsearch.core.mapping.IndexCoordinates;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.vaslim.subtitle_fts.SubtitleFtsApplication;
 import org.vaslim.subtitle_fts.constants.Constants;
 import org.vaslim.subtitle_fts.database.IndexFileCategoryRepository;
 import org.vaslim.subtitle_fts.database.IndexFileRepository;
@@ -59,6 +61,8 @@ public class IndexServiceImpl implements IndexService {
 
     private final ElasticsearchTransport elasticsearchTransport;
 
+    private final JdbcTemplate jdbcTemplate;
+
     private final FileService fileService;
 
     private final SubtitleRepository subtitleRepository;
@@ -85,10 +89,11 @@ public class IndexServiceImpl implements IndexService {
 
 
 
-    public IndexServiceImpl(ElasticsearchClient elasticsearchClient, ElasticsearchOperations elasticsearchOperations, ElasticsearchTransport elasticsearchTransport, FileService fileService, SubtitleRepository subtitleRepository, CategoryInfoRepository categoryInfoRepository, VttParser vttParser, IndexFileRepository indexFileRepository, IndexFileCategoryRepository indexFileCategoryRepository, IndexItemRepository indexItemRepository, EntityManager entityManager) {
+    public IndexServiceImpl(ElasticsearchClient elasticsearchClient, ElasticsearchOperations elasticsearchOperations, ElasticsearchTransport elasticsearchTransport, JdbcTemplate jdbcTemplate, FileService fileService, SubtitleRepository subtitleRepository, CategoryInfoRepository categoryInfoRepository, VttParser vttParser, IndexFileRepository indexFileRepository, IndexFileCategoryRepository indexFileCategoryRepository, IndexItemRepository indexItemRepository, EntityManager entityManager) {
         this.elasticsearchClient = elasticsearchClient;
         this.elasticsearchOperations = elasticsearchOperations;
         this.elasticsearchTransport = elasticsearchTransport;
+        this.jdbcTemplate = jdbcTemplate;
         this.fileService = fileService;
         this.subtitleRepository = subtitleRepository;
         this.categoryInfoRepository = categoryInfoRepository;
@@ -498,6 +503,10 @@ public class IndexServiceImpl implements IndexService {
     @Override
     public void deleteIndex() {
 
+        jdbcTemplate.execute("DROP TABLE IF EXISTS index_item");
+        jdbcTemplate.execute("DROP TABLE IF EXISTS index_file");
+        jdbcTemplate.execute("DROP TABLE IF EXISTS index_file_category");
+
         logger.info("Deleting all indexes...");
         IndexOperations indexOpsSubtitles = elasticsearchOperations.indexOps(IndexCoordinates.of(Constants.INDEX_SUBTITLES));
         if (indexOpsSubtitles.exists()) {
@@ -510,6 +519,8 @@ public class IndexServiceImpl implements IndexService {
         }
         createIndexes();
         logger.info("Done.");
+
+        SubtitleFtsApplication.restart();
     }
 
     public void createIndexes() {
