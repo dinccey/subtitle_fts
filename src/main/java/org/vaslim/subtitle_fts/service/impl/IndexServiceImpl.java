@@ -78,6 +78,14 @@ public class IndexServiceImpl implements IndexService {
     private final IndexItemRepository indexItemRepository;
     private final EntityManager entityManager;
 
+    private static final AtomicInteger counterCategoryInfoSuccess = new AtomicInteger(0);
+    private static final AtomicInteger counterCategoryInfoFailed = new AtomicInteger(0);
+
+    private static final AtomicInteger counterSubtitleSuccess = new AtomicInteger(0);
+    private static final AtomicInteger counterSubtitleFailed = new AtomicInteger(0);
+
+
+
     @Value("${files.path.root}")
     private String path;
 
@@ -134,10 +142,20 @@ public class IndexServiceImpl implements IndexService {
             }
             endTime = System.currentTimeMillis();
             logger.info("Subtitle indexing time seconds: {}", (endTime - startTime) / 1000);
+            logger.info("CategoryInfo success items: {}", counterCategoryInfoSuccess.get());
+            logger.info("CategoryInfo failed items: {}", counterCategoryInfoFailed.get());
+            logger.info("Subtitle success items: {}", counterSubtitleSuccess.get());
+            logger.info("Subtitle failed items: {}", counterSubtitleFailed.get());
+
             elasticsearchOperations.indexOps(IndexCoordinates.of(Constants.INDEX_SUBTITLES)).refresh();
             elasticsearchOperations.indexOps(IndexCoordinates.of(Constants.INDEX_CATEGORY_INFO)).refresh();
         } finally {
-            fileService.reset(); //reset iterator
+            fileService.reset();
+
+            counterSubtitleSuccess.set(0); //reset iterator
+            counterSubtitleFailed.set(0); //reset iterator
+            counterCategoryInfoFailed.set(0); //reset iterator
+            counterCategoryInfoSuccess.set(0); //reset iterator
         }
 
     }
@@ -153,7 +171,7 @@ public class IndexServiceImpl implements IndexService {
                     try {
                         indexFileCategory = getIndexFileCategoryUpdated(file);
                     } catch (IOException | NoSuchAlgorithmException e) {
-                        throw new RuntimeException(e);
+                        logger.error(e.getMessage());
                     }
                 }
             });
@@ -170,7 +188,6 @@ public class IndexServiceImpl implements IndexService {
             page = indexFileCategoryRepository.findIndexFileByProcessedIsFalse(pageable);
             for (IndexFileCategory indexFileCategory : page) {
                 String filePath = indexFileCategory.getFilePath();
-                // 1️⃣ Change extension to .json and read the JSON file
                 String jsonFileName = filePath.replaceFirst("\\.[^.]+$", ".json");
                 ObjectMapper mapper = new ObjectMapper();
                 try{
@@ -182,8 +199,9 @@ public class IndexServiceImpl implements IndexService {
                     indexFileCategory.setDocumentId(categoryInfo.getId());
                     indexFileCategoryRepository.save(indexFileCategory);
                     indexFileCategoryRepository.flush();
+                    counterCategoryInfoSuccess.incrementAndGet();
                 }catch (Exception e){
-                    logger.error("Error categoryInfo: {}", e.getMessage());
+                    counterCategoryInfoFailed.incrementAndGet();
                 }
 
             }
@@ -201,20 +219,20 @@ public class IndexServiceImpl implements IndexService {
                     IndexFile indexFile;
                     try {
                         indexFile = getIndexFileUpdated(file);
-
+                        if(indexFile.isFileChanged()){
+                            indexFile.setProcessed(false);
+                            subtitleRepository.deleteAll(indexItemsToSubtitles(indexFile.getIndexItems()));
+                            indexItemRepository.deleteAll(indexFile.getIndexItems());
+                            indexFile.getIndexItems().clear();
+                            indexFile.setFileChanged(false);
+                            indexFileRepository.save(indexFile);
+                        }
                     } catch (IOException | NoSuchAlgorithmException e) {
                         e.printStackTrace();
-                        throw new RuntimeException(e);
+                        logger.error(e.getMessage());
+                        //counterSubtitleFailed.incrementAndGet();
                     }
-                    if(indexFile.isFileChanged()){
-                        indexFile.setProcessed(false);
-                        subtitleRepository.deleteAll(indexItemsToSubtitles(indexFile.getIndexItems()));
-                        indexItemRepository.deleteAll(indexFile.getIndexItems());
-                        indexFile.getIndexItems().clear();
-                        indexFile.setFileChanged(false);
-                        indexFileRepository.save(indexFile);
 
-                    }
                 }
             });
         }
@@ -243,17 +261,17 @@ public class IndexServiceImpl implements IndexService {
                     JsonNode rootNode = mapper.readTree(new File(jsonFileName));
 
                     subtitleCues.forEach(subtitleCue -> {
-                        Subtitle subtitle = null;
                         try {
-                            subtitle = populateSubtitle(subtitleCue, rootNode);
+                            Subtitle subtitle = populateSubtitle(subtitleCue, rootNode);
+                            IndexItem indexItem = new IndexItem();
+                            indexItem.setIndexFile(indexFile);
+                            indexItem.setDocumentId(subtitle.getId());
+                            indexItems.add(indexItem);
+                            subtitles.add(subtitle);
                         } catch (IOException e) {
                             logger.error("Exception: {}", e.getMessage());
                         }
-                        IndexItem indexItem = new IndexItem();
-                        indexItem.setIndexFile(indexFile);
-                        indexItem.setDocumentId(subtitle.getId());
-                        indexItems.add(indexItem);
-                        subtitles.add(subtitle);
+
                     });
                     indexItemRepository.saveAll(indexItems);
                     subtitleRepository.saveAll(subtitles);
@@ -263,9 +281,11 @@ public class IndexServiceImpl implements IndexService {
                     subtitles.clear();
                     indexItemRepository.flush();
                     entityManager.clear();
+                    counterSubtitleSuccess.incrementAndGet();
 
                 } catch (IOException | SubtitleParsingException | IndexOutOfBoundsException e) {
                     logger.error("Exception with file:{} : {}", file, e.getMessage());
+                    counterSubtitleFailed.incrementAndGet();
                 }
 
             }
