@@ -21,6 +21,6 @@ public interface IndexFileCategoryRepository extends JpaRepository<IndexFileCate
     Optional<IndexFileCategory> findByFilePath(String filePath);
 
     @Modifying
-    @Query("DELETE FROM IndexFileCategory ")
+    @Query(value = "DROP TABLE index_file_category", nativeQuery = true)
     void deleteAllEntities();
 }

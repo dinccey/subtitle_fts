@@ -21,6 +21,6 @@ public interface IndexFileRepository extends JpaRepository<IndexFile, Long> {
     Optional<IndexFile> findByFilePath(String filePath);
 
     @Modifying
-    @Query("DELETE FROM IndexFile ")
+    @Query(value = "DROP TABLE index_file", nativeQuery = true)
     void deleteAllEntities();
 }

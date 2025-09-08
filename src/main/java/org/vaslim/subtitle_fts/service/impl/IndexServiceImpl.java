@@ -2,6 +2,8 @@ package org.vaslim.subtitle_fts.service.impl;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.transport.ElasticsearchTransport;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.noop.subtitle.model.SubtitleCue;
 import fr.noop.subtitle.model.SubtitleParsingException;
 import fr.noop.subtitle.vtt.VttObject;
@@ -11,7 +13,6 @@ import net.openhft.hashing.LongHashFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.annotation.Transient;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -19,8 +20,11 @@ import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.IndexOperations;
 import org.springframework.data.elasticsearch.core.document.Document;
 import org.springframework.data.elasticsearch.core.mapping.IndexCoordinates;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.vaslim.subtitle_fts.SubtitleFtsApplication;
 import org.vaslim.subtitle_fts.constants.Constants;
 import org.vaslim.subtitle_fts.database.IndexFileCategoryRepository;
 import org.vaslim.subtitle_fts.database.IndexFileRepository;
@@ -41,7 +45,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -54,6 +61,8 @@ public class IndexServiceImpl implements IndexService {
     private final ElasticsearchOperations elasticsearchOperations;
 
     private final ElasticsearchTransport elasticsearchTransport;
+
+    private final JdbcTemplate jdbcTemplate;
 
     private final FileService fileService;
 
@@ -70,6 +79,13 @@ public class IndexServiceImpl implements IndexService {
     private final IndexItemRepository indexItemRepository;
     private final EntityManager entityManager;
 
+    private static final AtomicInteger counterCategoryInfoSuccess = new AtomicInteger(0);
+    private static final AtomicInteger counterCategoryInfoFailed = new AtomicInteger(0);
+
+    private static final AtomicInteger counterSubtitleSuccess = new AtomicInteger(0);
+    private static final AtomicInteger counterSubtitleFailed = new AtomicInteger(0);
+
+
     @Value("${files.path.root}")
     private String path;
 
@@ -79,10 +95,12 @@ public class IndexServiceImpl implements IndexService {
     @Value("${subtitle_index.file.extension}")
     private String subtitleIndexFileExtension;
 
-    public IndexServiceImpl(ElasticsearchClient elasticsearchClient, ElasticsearchOperations elasticsearchOperations, ElasticsearchTransport elasticsearchTransport, FileService fileService, SubtitleRepository subtitleRepository, CategoryInfoRepository categoryInfoRepository, VttParser vttParser, IndexFileRepository indexFileRepository, IndexFileCategoryRepository indexFileCategoryRepository, IndexItemRepository indexItemRepository, EntityManager entityManager) {
+
+    public IndexServiceImpl(ElasticsearchClient elasticsearchClient, ElasticsearchOperations elasticsearchOperations, ElasticsearchTransport elasticsearchTransport, JdbcTemplate jdbcTemplate, FileService fileService, SubtitleRepository subtitleRepository, CategoryInfoRepository categoryInfoRepository, VttParser vttParser, IndexFileRepository indexFileRepository, IndexFileCategoryRepository indexFileCategoryRepository, IndexItemRepository indexItemRepository, EntityManager entityManager) {
         this.elasticsearchClient = elasticsearchClient;
         this.elasticsearchOperations = elasticsearchOperations;
         this.elasticsearchTransport = elasticsearchTransport;
+        this.jdbcTemplate = jdbcTemplate;
         this.fileService = fileService;
         this.subtitleRepository = subtitleRepository;
         this.categoryInfoRepository = categoryInfoRepository;
@@ -105,7 +123,7 @@ public class IndexServiceImpl implements IndexService {
 
             try {
                 indexCategoryInfo();
-            } catch (Exception e){
+            } catch (Exception e) {
                 logger.error(e.getMessage());
             }
 
@@ -117,32 +135,41 @@ public class IndexServiceImpl implements IndexService {
             logger.info("Starting subtitle indexing..");
             try {
                 indexSubtitles();
-            } catch (Exception e){
+            } catch (Exception e) {
                 e.printStackTrace();
                 logger.error(e.getMessage());
             }
             endTime = System.currentTimeMillis();
             logger.info("Subtitle indexing time seconds: {}", (endTime - startTime) / 1000);
+            logger.info("CategoryInfo success items: {}", counterCategoryInfoSuccess.get());
+            logger.info("CategoryInfo failed items: {}", counterCategoryInfoFailed.get());
+            logger.info("Subtitle success items: {}", counterSubtitleSuccess.get());
+            logger.info("Subtitle failed items: {}", counterSubtitleFailed.get());
+
             elasticsearchOperations.indexOps(IndexCoordinates.of(Constants.INDEX_SUBTITLES)).refresh();
             elasticsearchOperations.indexOps(IndexCoordinates.of(Constants.INDEX_CATEGORY_INFO)).refresh();
         } finally {
-            fileService.reset(); //reset iterator
+            fileService.reset();
+
+            counterSubtitleSuccess.set(0); //reset iterator
+            counterSubtitleFailed.set(0); //reset iterator
+            counterCategoryInfoFailed.set(0); //reset iterator
+            counterCategoryInfoSuccess.set(0); //reset iterator
         }
 
     }
 
 
-
     private void indexCategoryInfo() {
         List<File> files;
-        while(!(files = fileService.getNext()).isEmpty()){
+        while (!(files = fileService.getNext()).isEmpty()) {
             files.forEach(file -> {
-                if(file.getAbsolutePath().endsWith(categoryInfoIndexFileExtension)){
+                if (file.getAbsolutePath().endsWith(categoryInfoIndexFileExtension)) {
                     IndexFileCategory indexFileCategory;
                     try {
                         indexFileCategory = getIndexFileCategoryUpdated(file);
                     } catch (IOException | NoSuchAlgorithmException e) {
-                        throw new RuntimeException(e);
+                        logger.error(e.getMessage());
                     }
                 }
             });
@@ -158,13 +185,27 @@ public class IndexServiceImpl implements IndexService {
         do {
             page = indexFileCategoryRepository.findIndexFileByProcessedIsFalse(pageable);
             for (IndexFileCategory indexFileCategory : page) {
-                CategoryInfo categoryInfo = populateCategoryInfo(indexFileCategory.getFilePath());
-                indexFileCategory.setDocumentId(categoryInfo.getId());
-                categoryInfoRepository.save(categoryInfo);
-                indexFileCategory.setProcessed(true);
-                indexFileCategory.setDocumentId(categoryInfo.getId());
-                indexFileCategoryRepository.save(indexFileCategory);
-                indexFileCategoryRepository.flush();
+                String filePath = indexFileCategory.getFilePath();
+                String jsonFileName = filePath.replaceFirst("\\.[^.]+$", ".json");
+                ObjectMapper mapper = new ObjectMapper();
+                try{
+                    JsonNode rootNode = mapper.readTree(new File(jsonFileName));
+                    CategoryInfo categoryInfo = populateCategoryInfo(rootNode);
+                    indexFileCategory.setDocumentId(categoryInfo.getId());
+                    categoryInfoRepository.save(categoryInfo);
+                    indexFileCategory.setProcessed(true);
+                    indexFileCategory.setDocumentId(categoryInfo.getId());
+                    indexFileCategoryRepository.save(indexFileCategory);
+                    indexFileCategoryRepository.flush();
+                    counterCategoryInfoSuccess.incrementAndGet();
+                }catch (Exception e){
+                    indexFileCategory.setProcessingError(e.getMessage());
+                    indexFileCategory.setProcessed(true);
+                    indexFileCategoryRepository.save(indexFileCategory);
+                    counterCategoryInfoFailed.incrementAndGet();
+                    indexFileCategoryRepository.flush();
+                }
+
             }
         } while (page.hasNext());
 
@@ -173,27 +214,27 @@ public class IndexServiceImpl implements IndexService {
 
     private void indexSubtitles() {
         List<File> files;
-        while(!(files = fileService.getNext()).isEmpty()){
+        while (!(files = fileService.getNext()).isEmpty()) {
             files.forEach(file -> {
 
-                if(file.getAbsolutePath().endsWith(subtitleIndexFileExtension)){
+                if (file.getAbsolutePath().endsWith(subtitleIndexFileExtension)) {
                     IndexFile indexFile;
                     try {
                         indexFile = getIndexFileUpdated(file);
-
+                        if (indexFile.isFileChanged()) {
+                            indexFile.setProcessed(false);
+                            subtitleRepository.deleteAll(indexItemsToSubtitles(indexFile.getIndexItems()));
+                            indexItemRepository.deleteAll(indexFile.getIndexItems());
+                            indexFile.getIndexItems().clear();
+                            indexFile.setFileChanged(false);
+                            indexFileRepository.save(indexFile);
+                        }
                     } catch (IOException | NoSuchAlgorithmException e) {
                         e.printStackTrace();
-                        throw new RuntimeException(e);
+                        logger.error(e.getMessage());
+                        //counterSubtitleFailed.incrementAndGet();
                     }
-                    if(indexFile.isFileChanged()){
-                        indexFile.setProcessed(false);
-                        subtitleRepository.deleteAll(indexItemsToSubtitles(indexFile.getIndexItems()));
-                        indexItemRepository.deleteAll(indexFile.getIndexItems());
-                        indexFile.getIndexItems().clear();
-                        indexFile.setFileChanged(false);
-                        indexFileRepository.save(indexFile);
 
-                    }
                 }
             });
         }
@@ -216,13 +257,23 @@ public class IndexServiceImpl implements IndexService {
 
                     List<SubtitleCue> subtitleCues = vttObject.getCues();
 
+                    // 1️⃣ Change extension to .json and read the JSON file
+                    String jsonFileName = file.getPath().replaceFirst("\\.[^.]+$", ".json");
+                    ObjectMapper mapper = new ObjectMapper();
+                    JsonNode rootNode = mapper.readTree(new File(jsonFileName));
+
                     subtitleCues.forEach(subtitleCue -> {
-                        Subtitle subtitle = populateSubtitle(subtitleCue, file.getPath());
-                        IndexItem indexItem = new IndexItem();
-                        indexItem.setIndexFile(indexFile);
-                        indexItem.setDocumentId(subtitle.getId());
-                        indexItems.add(indexItem);
-                        subtitles.add(subtitle);
+                        try {
+                            Subtitle subtitle = populateSubtitle(subtitleCue, rootNode);
+                            IndexItem indexItem = new IndexItem();
+                            indexItem.setIndexFile(indexFile);
+                            indexItem.setDocumentId(subtitle.getId());
+                            indexItems.add(indexItem);
+                            subtitles.add(subtitle);
+                        } catch (IOException e) {
+                            logger.error("Exception: {}", e.getMessage());
+                        }
+
                     });
                     indexItemRepository.saveAll(indexItems);
                     subtitleRepository.saveAll(subtitles);
@@ -232,9 +283,15 @@ public class IndexServiceImpl implements IndexService {
                     subtitles.clear();
                     indexItemRepository.flush();
                     entityManager.clear();
+                    counterSubtitleSuccess.incrementAndGet();
 
                 } catch (IOException | SubtitleParsingException | IndexOutOfBoundsException e) {
-                    logger.error("Exception with file:{} : {}", file, e.getMessage());
+                    counterSubtitleFailed.incrementAndGet();
+                    indexFile.setProcessed(true);
+                    indexFile.setProcessingError(e.getMessage());
+                    indexFileRepository.save(indexFile);
+                    indexItemRepository.flush();
+                    entityManager.clear();
                 }
 
             }
@@ -252,10 +309,11 @@ public class IndexServiceImpl implements IndexService {
         });
         return subtitles;
     }
+
     private CategoryInfo indexFileCategoryToCategory(String idHash) {
-       CategoryInfo categoryInfo = new CategoryInfo();
-       categoryInfo.setId(idHash);
-       return categoryInfo;
+        CategoryInfo categoryInfo = new CategoryInfo();
+        categoryInfo.setId(idHash);
+        return categoryInfo;
     }
 
     private IndexFile getIndexFileUpdated(File file) throws IOException, NoSuchAlgorithmException {
@@ -263,32 +321,34 @@ public class IndexServiceImpl implements IndexService {
         String oldHash = indexFile.getFileHash();
         indexFile.setFileHash(generateXXH3(file));
         indexFile.setFileChanged(false);
-        if(oldHash != null && !indexFile.getFileHash().equals(oldHash)){
+        if (oldHash != null && !indexFile.getFileHash().equals(oldHash)) {
             indexFile.setFileChanged(true);
         }
-        if(indexFile.getFilePath() == null){
+        if (indexFile.getFilePath() == null) {
             indexFile.setFilePath(file.getAbsolutePath());
         }
-        if(indexFile.isObjectChanged()){
+        if (indexFile.isObjectChanged()) {
             indexFileRepository.save(indexFile);
         }
         return indexFile;
     }
+
     private IndexFileCategory getIndexFileCategoryUpdated(File file) throws IOException, NoSuchAlgorithmException {
         IndexFileCategory indexFile = indexFileCategoryRepository.findByFilePath(file.getAbsolutePath()).orElse(new IndexFileCategory());
-        if(indexFile.getFilePath() == null){
+        if (indexFile.getFilePath() == null) {
             indexFile.setFilePath(file.getAbsolutePath());
         }
-        if(indexFile.isObjectChanged() || indexFile.getId() == null){
+        if (indexFile.isObjectChanged() || indexFile.getId() == null) {
             indexFileCategoryRepository.save(indexFile);
         }
         return indexFile;
     }
-    private void createIndexIfNotExists(String indexName, Map<String,Object> mappings) {
+
+    private void createIndexIfNotExists(String indexName, Map<String, Object> mappings) {
         Map<String, Object> settings = new HashMap<>();
         //settings.put("index.max_result_window", 10);
 
-        if(!elasticsearchOperations.indexOps(IndexCoordinates.of(indexName)).exists()){
+        if (!elasticsearchOperations.indexOps(IndexCoordinates.of(indexName)).exists()) {
             Document settingsDocument = Document.create();
             settingsDocument.append("settings", settings);
 
@@ -314,6 +374,7 @@ public class IndexServiceImpl implements IndexService {
 
         return mappings;
     }
+
     private Map<String, Object> getMappingsSubtitle() {
         Map<String, Object> mappings = new HashMap<>();
 
@@ -336,13 +397,34 @@ public class IndexServiceImpl implements IndexService {
         return mappings;
     }
 
-    private Subtitle populateSubtitle(SubtitleCue subtitleCue, String fileName) {
+    private Subtitle populateSubtitle(SubtitleCue subtitleCue, JsonNode root) throws IOException {
         Subtitle subtitle = new Subtitle();
-        String subtitlePath = getPath(fileName);
-        String categoryInfo = getCategoryInfo(subtitlePath);
 
-        subtitle.setCategoryInfo(categoryInfo);
-        subtitle.setSubtitlePath(subtitlePath);
+        // categoryInfo → from sql_params.vid_category
+        subtitle.setCategoryInfo(root.path("sql_params").path("search_category").asText() + " " + root.path("sql_params").path("vid_title").asText());
+
+        // subtitlePath → from target_vtt_filename
+        subtitle.setSubtitlePath(root.path("target_directory_relative").asText() + "/" + root.path("target_vtt_filename").asText());
+
+        // videoDate → from sql_params.date (parse to DateTime)
+        String dateStr = root.path("sql_params").path("date").asText();
+        if (dateStr.equals("0000-00-00")) {
+            dateStr = root.path("sql_params").path("created_at").asText();
+        }
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        LocalDateTime dateTime = LocalDateTime.parse(dateStr, fmt);
+
+        subtitle.setVideoDate(dateTime);
+
+        // author → from sql_params.search_category
+        subtitle.setAuthor(root.path("sql_params").path("search_category").asText());
+
+        // title → from sql_params.vid_title
+        subtitle.setTitle(root.path("sql_params").path("vid_title").asText());
+
+        // videoId → from sql_params.video_id
+        subtitle.setVideoId(root.path("sql_params").path("video_id").asText());
+
         subtitle.setText(subtitleCue.getText());
         subtitle.setTimestamp(convertTimestampToSeconds(subtitleCue.getId().substring(0, subtitleCue.getId().indexOf(" "))));
         subtitle.setId(generateId(subtitle.getSubtitlePath(), subtitle.getText(), String.valueOf(subtitle.getTimestamp())));
@@ -350,17 +432,37 @@ public class IndexServiceImpl implements IndexService {
         return subtitle;
     }
 
-    private CategoryInfo populateCategoryInfo(String filename){
+    private CategoryInfo populateCategoryInfo(JsonNode root) {
         CategoryInfo categoryInfo = new CategoryInfo();
-        categoryInfo.setCategoryInfo(getCategoryInfo(getPath(filename)));
-        categoryInfo.setSubtitlePath(getPath(filename));
-        categoryInfo.setId(generateId(categoryInfo.getCategoryInfo(),categoryInfo.getSubtitlePath(), ""));
+
+        // categoryInfo → from sql_params.vid_category
+        categoryInfo.setCategoryInfo(root.path("sql_params").path("vid_category").asText() + " " + root.path("sql_params").path("vid_title").asText());
+
+        // subtitlePath → from target_vtt_filename
+        categoryInfo.setSubtitlePath(root.path("target_directory_relative").asText() + "/" + root.path("target_vtt_filename").asText());
+
+        // videoDate → from sql_params.date (parse to DateTime)
+        String dateStr = root.path("sql_params").path("date").asText();
+        if (dateStr.equals("0000-00-00")) {
+            dateStr = root.path("sql_params").path("created_at").asText();
+        }
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        LocalDateTime dateTime = LocalDateTime.parse(dateStr, fmt);
+        categoryInfo.setVideoDate(dateTime);
+
+        // author → from sql_params.search_category
+        categoryInfo.setAuthor(root.path("sql_params").path("search_category").asText());
+
+        // title → from sql_params.vid_title
+        categoryInfo.setTitle(root.path("sql_params").path("vid_title").asText());
+
+        categoryInfo.setId(generateId(categoryInfo.getCategoryInfo(), categoryInfo.getSubtitlePath(), ""));
         return categoryInfo;
     }
 
     private String getPath(String fileName) {
-        String subtitlePath = fileName.replaceAll(path,"");
-        if(subtitlePath.startsWith("/")){
+        String subtitlePath = fileName.replaceAll(path, "");
+        if (subtitlePath.startsWith("/")) {
             subtitlePath = subtitlePath.substring(1);
         }
         return subtitlePath;
@@ -369,8 +471,8 @@ public class IndexServiceImpl implements IndexService {
     private String getCategoryInfo(String subtitlePath) {
         return subtitlePath
                 .replaceAll("/", " ")
-                .replaceAll(categoryInfoIndexFileExtension,"")
-                .replaceAll("_"," ");
+                .replaceAll(categoryInfoIndexFileExtension, "")
+                .replaceAll("_", " ");
     }
 
     public double convertTimestampToSeconds(String timestamp) {
@@ -433,9 +535,12 @@ public class IndexServiceImpl implements IndexService {
     @Transactional
     @Override
     public void deleteIndex() {
-        indexItemRepository.deleteAllEntities();
-        indexFileRepository.deleteAllEntities();
-        indexFileCategoryRepository.deleteAllEntities();
+
+        jdbcTemplate.execute("DROP TABLE IF EXISTS index_item");
+        jdbcTemplate.execute("DROP TABLE IF EXISTS index_file");
+        jdbcTemplate.execute("DROP TABLE IF EXISTS index_file_category");
+
+        logger.info("Deleting all indexes...");
         IndexOperations indexOpsSubtitles = elasticsearchOperations.indexOps(IndexCoordinates.of(Constants.INDEX_SUBTITLES));
         if (indexOpsSubtitles.exists()) {
             indexOpsSubtitles.delete();
@@ -445,6 +550,28 @@ public class IndexServiceImpl implements IndexService {
         if (indexOpsCategoryInfo.exists()) {
             indexOpsCategoryInfo.delete();
         }
+        createIndexes();
+        logger.info("Done.");
+
+        SubtitleFtsApplication.restart();
+    }
+
+    public void createIndexes() {
+        logger.info("Creating indexes...");
+
+        IndexOperations indexOpsSubtitles = elasticsearchOperations.indexOps(IndexCoordinates.of(Constants.INDEX_SUBTITLES));
+        if (!indexOpsSubtitles.exists()) {
+            indexOpsSubtitles.create(); // creates the index
+            indexOpsSubtitles.putMapping(indexOpsSubtitles.createMapping(Subtitle.class)); // applies mapping
+        }
+
+        IndexOperations indexOpsCategoryInfo = elasticsearchOperations.indexOps(IndexCoordinates.of(Constants.INDEX_CATEGORY_INFO));
+        if (!indexOpsCategoryInfo.exists()) {
+            indexOpsCategoryInfo.create();
+            indexOpsCategoryInfo.putMapping(indexOpsCategoryInfo.createMapping(CategoryInfo.class));
+        }
+
+        logger.info("Indexes created.");
     }
 
 
@@ -454,7 +581,7 @@ public class IndexServiceImpl implements IndexService {
             AtomicInteger count = new AtomicInteger();
             long startTime = System.currentTimeMillis();
             indexFileRepository.findAll().forEach(indexFile -> {
-                if (!Files.exists(java.nio.file.Paths.get(indexFile.getFilePath()))) {
+                if (!Files.exists(Paths.get(indexFile.getFilePath()))) {
                     subtitleRepository.deleteAll(indexItemsToSubtitles(indexFile.getIndexItems()));
                     indexItemRepository.deleteAll(indexFile.getIndexItems());
                     indexFileRepository.delete(indexFile);
@@ -468,12 +595,11 @@ public class IndexServiceImpl implements IndexService {
 
             count.set(0);
             indexFileCategoryRepository.findAll().forEach(indexFileCategory -> {
-                if (!Files.exists(java.nio.file.Paths.get(indexFileCategory.getFilePath()))) {
+                if (!Files.exists(Paths.get(indexFileCategory.getFilePath()))) {
                     categoryInfoRepository.delete(indexFileCategoryToCategory(indexFileCategory.getDocumentId()));
                     indexFileCategoryRepository.delete(indexFileCategory);
                     count.getAndIncrement();
-                }
-                else {
+                } else {
 
                 }
             });
@@ -482,7 +608,7 @@ public class IndexServiceImpl implements IndexService {
             indexFileCategoryRepository.flush();
             endTime = System.currentTimeMillis();
             logger.info("Category database cleanup time seconds: " + (endTime - startTime) / 1000 + ", Deleted: " + count.get());
-        } catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
             logger.error("Cleanup failed: {}", e.getMessage());
         }

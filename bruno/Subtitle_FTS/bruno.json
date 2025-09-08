@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "Subtitle_FTS",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}
