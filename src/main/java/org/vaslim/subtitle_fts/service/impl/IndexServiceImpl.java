@@ -13,7 +13,6 @@ import net.openhft.hashing.LongHashFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -21,7 +20,6 @@ import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.IndexOperations;
 import org.springframework.data.elasticsearch.core.document.Document;
 import org.springframework.data.elasticsearch.core.mapping.IndexCoordinates;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -117,8 +115,7 @@ public class IndexServiceImpl implements IndexService {
         List<File> files;
         Set<CategoryInfo> categoryInfos;
         logger.info("Starting indexing...");
-        //createIndexIfNotExists(Constants.INDEX_SUBTITLES, getMappingsSubtitle());
-        //createIndexIfNotExists(Constants.INDEX_CATEGORY_INFO, getMappingsCategoryInfo());
+
         try {
             long startTime = System.currentTimeMillis();
 
@@ -361,58 +358,6 @@ public class IndexServiceImpl implements IndexService {
         return indexFile;
     }
 
-    private void createIndexIfNotExists(String indexName, Map<String, Object> mappings) {
-        Map<String, Object> settings = new HashMap<>();
-        //settings.put("index.max_result_window", 10);
-
-        if (!elasticsearchOperations.indexOps(IndexCoordinates.of(indexName)).exists()) {
-            Document settingsDocument = Document.create();
-            settingsDocument.append("settings", settings);
-
-            Document mappingsDocument = Document.create();
-            mappingsDocument.append("properties", mappings);
-
-            settingsDocument.append("mappings", mappingsDocument);
-
-            elasticsearchOperations.indexOps(IndexCoordinates.of(indexName)).create(settingsDocument);
-        }
-    }
-
-    private Map<String, Object> getMappingsCategoryInfo() {
-        Map<String, Object> mappings = new HashMap<>();
-
-        Map<String, Object> categoryInfo = new HashMap<>();
-        categoryInfo.put("type", "keyword");
-        mappings.put("categoryInfo", categoryInfo);
-
-        Map<String, Object> subtitlePath = new HashMap<>();
-        subtitlePath.put("type", "keyword");
-        mappings.put("subtitlePath", subtitlePath);
-
-        return mappings;
-    }
-
-    private Map<String, Object> getMappingsSubtitle() {
-        Map<String, Object> mappings = new HashMap<>();
-
-        Map<String, Object> categoryInfo = new HashMap<>();
-        categoryInfo.put("type", "keyword");
-        mappings.put("categoryInfo", categoryInfo);
-
-        Map<String, Object> subtitlePath = new HashMap<>();
-        subtitlePath.put("type", "keyword");
-        mappings.put("subtitlePath", subtitlePath);
-
-        Map<String, Object> timestamp = new HashMap<>();
-        timestamp.put("type", "double");
-        mappings.put("timestamp", timestamp);
-
-        Map<String, Object> text = new HashMap<>();
-        text.put("type", "text");
-        mappings.put("text", text);
-
-        return mappings;
-    }
 
     private Subtitle populateSubtitle(SubtitleCue subtitleCue, JsonNode root) throws IOException {
         Subtitle subtitle = new Subtitle();
@@ -485,20 +430,6 @@ public class IndexServiceImpl implements IndexService {
         return categoryInfo;
     }
 
-    private String getPath(String fileName) {
-        String subtitlePath = fileName.replaceAll(path, "");
-        if (subtitlePath.startsWith("/")) {
-            subtitlePath = subtitlePath.substring(1);
-        }
-        return subtitlePath;
-    }
-
-    private String getCategoryInfo(String subtitlePath) {
-        return subtitlePath
-                .replaceAll("/", " ")
-                .replaceAll(categoryInfoIndexFileExtension, "")
-                .replaceAll("_", " ");
-    }
 
     public double convertTimestampToSeconds(String timestamp) {
         String[] parts = timestamp.split(":");
@@ -546,15 +477,6 @@ public class IndexServiceImpl implements IndexService {
             }
             return Long.toHexString(hash);
         }
-    }
-
-    private static String convertByteArrayToHexString(byte[] arrayBytes) {
-        StringBuilder stringBuffer = new StringBuilder();
-        for (byte bytes : arrayBytes) {
-            stringBuffer.append(Integer.toString((bytes & 0xff) + 0x100, 16)
-                    .substring(1));
-        }
-        return stringBuffer.toString();
     }
 
     @Transactional
