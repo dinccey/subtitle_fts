@@ -55,6 +55,9 @@ public class SubtitleServiceImpl implements SubtitleService {
         MediaRecordDTO mediaRecordDTO = new MediaRecordDTO();
         mediaRecordDTO.setSubtitlePath(categoryInfo.getSubtitlePath());
         mediaRecordDTO.setCategoryInfo(categoryInfo.getCategoryInfo());
+        mediaRecordDTO.setTitle(categoryInfo.getTitle());
+        mediaRecordDTO.setAuthor(categoryInfo.getAuthor());
+        mediaRecordDTO.setVideoDate(categoryInfo.getVideoDate());
 
         return mediaRecordDTO;
     }

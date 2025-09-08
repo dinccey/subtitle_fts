@@ -2,6 +2,7 @@ package org.vaslim.subtitle_fts.model.elastic;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.elasticsearch.annotations.DateFormat;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
@@ -19,6 +20,8 @@ public class Subtitle {
     @Field(type = FieldType.Text, name = "categoryInfo")
     private String categoryInfo;
     private String subtitlePath;
+
+    @Field(type = FieldType.Date, format = DateFormat.date_hour_minute_second)
     private LocalDateTime videoDate;
     private String author;
     private String title;

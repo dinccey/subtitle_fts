@@ -1,6 +1,7 @@
 package org.vaslim.subtitle_fts.model.elastic;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.elasticsearch.annotations.DateFormat;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
@@ -13,8 +14,11 @@ public class CategoryInfo {
 
     @Id
     private String id;
+
     @Field(type = FieldType.Text, name = "categoryInfo")
     private String categoryInfo;
+
+    @Field(type = FieldType.Date, format = DateFormat.date_hour_minute_second)
     private LocalDateTime videoDate;
     private String author;
     private String title;

@@ -9,9 +9,10 @@ import org.springframework.context.ConfigurableApplicationContext;
 public class SubtitleFtsApplication {
 
     private static ConfigurableApplicationContext context;
-	public static void main(String[] args) {
-		SpringApplication.run(SubtitleFtsApplication.class, args);
-	}
+
+    public static void main(String[] args) {
+        context = SpringApplication.run(SubtitleFtsApplication.class, args);
+    }
 
     public static void restart() {
         ApplicationArguments args = context.getBean(ApplicationArguments.class);

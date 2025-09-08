@@ -24,6 +24,9 @@ public class IndexFile {
     @Column
     private boolean fileDeleted = false;
 
+    @Column(length = 2000)
+    private String processingError = null;
+
     @Column
     private boolean fileChanged;
 
@@ -111,5 +114,13 @@ public class IndexFile {
     }
     public boolean isObjectChanged() {
         return objectChanged;
+    }
+
+    public String getProcessingError() {
+        return processingError;
+    }
+
+    public void setProcessingError(String processingError) {
+        this.processingError = processingError;
     }
 }
