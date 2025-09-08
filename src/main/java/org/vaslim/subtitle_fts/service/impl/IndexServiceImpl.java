@@ -186,11 +186,11 @@ public class IndexServiceImpl implements IndexService {
         do {
             page = indexFileCategoryRepository.findIndexFileByProcessedIsFalse(pageable);
             for (IndexFileCategory indexFileCategory : page) {
-                try{
+                try {
                     String filePath = indexFileCategory.getFilePath();
                     String jsonFileName = filePath.replaceFirst("\\.[^.]+$", ".json");
                     ObjectMapper mapper = new ObjectMapper();
-                    try{
+                    try {
                         JsonNode rootNode = mapper.readTree(new File(jsonFileName));
                         CategoryInfo categoryInfo = populateCategoryInfo(rootNode);
                         indexFileCategory.setDocumentId(categoryInfo.getId());
@@ -200,16 +200,16 @@ public class IndexServiceImpl implements IndexService {
                         indexFileCategoryRepository.save(indexFileCategory);
                         indexFileCategoryRepository.flush();
                         counterCategoryInfoSuccess.incrementAndGet();
-                    }catch (Exception e){
+                    } catch (Exception e) {
                         indexFileCategory.setProcessingError(e.getMessage());
                         indexFileCategory.setProcessed(true);
                         indexFileCategoryRepository.save(indexFileCategory);
                         counterCategoryInfoFailed.incrementAndGet();
                         indexFileCategoryRepository.flush();
                     }
-                }catch (Exception e){
+                } catch (Exception e) {
                     counterCategoryInfoFailed.incrementAndGet();
-                    logger.error(e.getMessage());
+                    logger.error("Problem for file: {}, {}", indexFileCategory.getFilePath(), e.getMessage());
                 }
 
             }
@@ -255,7 +255,7 @@ public class IndexServiceImpl implements IndexService {
         do {
             page = indexFileRepository.findIndexFileByProcessedIsFalse(pageable);
             for (IndexFile indexFile : page) {
-                try{
+                try {
                     File file = new File(indexFile.getFilePath());
                     Set<IndexItem> indexItems = new HashSet<>();
                     VttObject vttObject;
@@ -301,10 +301,9 @@ public class IndexServiceImpl implements IndexService {
                         entityManager.clear();
                     }
 
-                }
-                catch (Exception e){
+                } catch (Exception e) {
                     counterSubtitleFailed.incrementAndGet();
-                    logger.error(e.getMessage());
+                    logger.error("Problem for subtitle file: {}, {}", indexFile.getFilePath(), e.getMessage());
                 }
             }
 
