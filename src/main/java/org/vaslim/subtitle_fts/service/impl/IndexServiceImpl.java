@@ -210,6 +210,9 @@ public class IndexServiceImpl implements IndexService {
                 } catch (Exception e) {
                     counterCategoryInfoFailed.incrementAndGet();
                     logger.error("Problem for file: {}, {}", indexFileCategory.getFilePath(), e.getMessage());
+                    indexFileCategory.setProcessed(true);
+                    indexFileCategory.setProcessingError(e.getMessage());
+                    indexFileCategoryRepository.save(indexFileCategory);
                 }
 
             }
@@ -304,6 +307,9 @@ public class IndexServiceImpl implements IndexService {
                 } catch (Exception e) {
                     counterSubtitleFailed.incrementAndGet();
                     logger.error("Problem for subtitle file: {}, {}", indexFile.getFilePath(), e.getMessage());
+                    indexFile.setProcessed(true);
+                    indexFile.setProcessingError(e.getMessage());
+                    indexFileRepository.save(indexFile);
                 }
             }
 
@@ -422,9 +428,12 @@ public class IndexServiceImpl implements IndexService {
         if (dateStr.equals("0000-00-00") || dateStr.length() < 5) {
             dateStr = root.path("sql_params").path("created_at").asText();
         }
+        // Check if dateStr is in yyyy-MM-dd format (length 10) and append time if needed
+        if (dateStr.length() == 10 && dateStr.matches("\\d{4}-\\d{2}-\\d{2}")) {
+            dateStr = dateStr + " 00:00:00";
+        }
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         LocalDateTime dateTime = LocalDateTime.parse(dateStr, fmt);
-
         subtitle.setVideoDate(dateTime);
 
         // author → from sql_params.search_category
@@ -453,9 +462,14 @@ public class IndexServiceImpl implements IndexService {
         categoryInfo.setSubtitlePath(root.path("target_directory_relative").asText() + "/" + root.path("target_vtt_filename").asText());
 
         // videoDate → from sql_params.date (parse to DateTime)
+        // videoDate → from sql_params.date (parse to DateTime)
         String dateStr = root.path("sql_params").path("date").asText();
         if (dateStr.equals("0000-00-00") || dateStr.length() < 5) {
             dateStr = root.path("sql_params").path("created_at").asText();
+        }
+        // Check if dateStr is in yyyy-MM-dd format (length 10) and append time if needed
+        if (dateStr.length() == 10 && dateStr.matches("\\d{4}-\\d{2}-\\d{2}")) {
+            dateStr = dateStr + " 00:00:00";
         }
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         LocalDateTime dateTime = LocalDateTime.parse(dateStr, fmt);
