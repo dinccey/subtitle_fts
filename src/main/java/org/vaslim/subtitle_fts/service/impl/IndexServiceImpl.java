@@ -13,6 +13,7 @@ import net.openhft.hashing.LongHashFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -185,25 +186,30 @@ public class IndexServiceImpl implements IndexService {
         do {
             page = indexFileCategoryRepository.findIndexFileByProcessedIsFalse(pageable);
             for (IndexFileCategory indexFileCategory : page) {
-                String filePath = indexFileCategory.getFilePath();
-                String jsonFileName = filePath.replaceFirst("\\.[^.]+$", ".json");
-                ObjectMapper mapper = new ObjectMapper();
                 try{
-                    JsonNode rootNode = mapper.readTree(new File(jsonFileName));
-                    CategoryInfo categoryInfo = populateCategoryInfo(rootNode);
-                    indexFileCategory.setDocumentId(categoryInfo.getId());
-                    categoryInfoRepository.save(categoryInfo);
-                    indexFileCategory.setProcessed(true);
-                    indexFileCategory.setDocumentId(categoryInfo.getId());
-                    indexFileCategoryRepository.save(indexFileCategory);
-                    indexFileCategoryRepository.flush();
-                    counterCategoryInfoSuccess.incrementAndGet();
+                    String filePath = indexFileCategory.getFilePath();
+                    String jsonFileName = filePath.replaceFirst("\\.[^.]+$", ".json");
+                    ObjectMapper mapper = new ObjectMapper();
+                    try{
+                        JsonNode rootNode = mapper.readTree(new File(jsonFileName));
+                        CategoryInfo categoryInfo = populateCategoryInfo(rootNode);
+                        indexFileCategory.setDocumentId(categoryInfo.getId());
+                        categoryInfoRepository.save(categoryInfo);
+                        indexFileCategory.setProcessed(true);
+                        indexFileCategory.setDocumentId(categoryInfo.getId());
+                        indexFileCategoryRepository.save(indexFileCategory);
+                        indexFileCategoryRepository.flush();
+                        counterCategoryInfoSuccess.incrementAndGet();
+                    }catch (Exception e){
+                        indexFileCategory.setProcessingError(e.getMessage());
+                        indexFileCategory.setProcessed(true);
+                        indexFileCategoryRepository.save(indexFileCategory);
+                        counterCategoryInfoFailed.incrementAndGet();
+                        indexFileCategoryRepository.flush();
+                    }
                 }catch (Exception e){
-                    indexFileCategory.setProcessingError(e.getMessage());
-                    indexFileCategory.setProcessed(true);
-                    indexFileCategoryRepository.save(indexFileCategory);
                     counterCategoryInfoFailed.incrementAndGet();
-                    indexFileCategoryRepository.flush();
+                    logger.error(e.getMessage());
                 }
 
             }
@@ -249,51 +255,57 @@ public class IndexServiceImpl implements IndexService {
         do {
             page = indexFileRepository.findIndexFileByProcessedIsFalse(pageable);
             for (IndexFile indexFile : page) {
-                File file = new File(indexFile.getFilePath());
-                Set<IndexItem> indexItems = new HashSet<>();
-                VttObject vttObject;
-                try {
-                    vttObject = vttParser.parse(new FileInputStream(file));
+                try{
+                    File file = new File(indexFile.getFilePath());
+                    Set<IndexItem> indexItems = new HashSet<>();
+                    VttObject vttObject;
+                    try {
+                        vttObject = vttParser.parse(new FileInputStream(file));
 
-                    List<SubtitleCue> subtitleCues = vttObject.getCues();
+                        List<SubtitleCue> subtitleCues = vttObject.getCues();
 
-                    // 1️⃣ Change extension to .json and read the JSON file
-                    String jsonFileName = file.getPath().replaceFirst("\\.[^.]+$", ".json");
-                    ObjectMapper mapper = new ObjectMapper();
-                    JsonNode rootNode = mapper.readTree(new File(jsonFileName));
+                        // 1️⃣ Change extension to .json and read the JSON file
+                        String jsonFileName = file.getPath().replaceFirst("\\.[^.]+$", ".json");
+                        ObjectMapper mapper = new ObjectMapper();
+                        JsonNode rootNode = mapper.readTree(new File(jsonFileName));
 
-                    subtitleCues.forEach(subtitleCue -> {
-                        try {
-                            Subtitle subtitle = populateSubtitle(subtitleCue, rootNode);
-                            IndexItem indexItem = new IndexItem();
-                            indexItem.setIndexFile(indexFile);
-                            indexItem.setDocumentId(subtitle.getId());
-                            indexItems.add(indexItem);
-                            subtitles.add(subtitle);
-                        } catch (IOException e) {
-                            logger.error("Exception: {}", e.getMessage());
-                        }
+                        subtitleCues.forEach(subtitleCue -> {
+                            try {
+                                Subtitle subtitle = populateSubtitle(subtitleCue, rootNode);
+                                IndexItem indexItem = new IndexItem();
+                                indexItem.setIndexFile(indexFile);
+                                indexItem.setDocumentId(subtitle.getId());
+                                indexItems.add(indexItem);
+                                subtitles.add(subtitle);
+                            } catch (IOException e) {
+                                logger.error("Exception: {}", e.getMessage());
+                            }
 
-                    });
-                    indexItemRepository.saveAll(indexItems);
-                    subtitleRepository.saveAll(subtitles);
-                    indexFile.setIndexItems(indexItems);
-                    indexFile.setProcessed(true);
-                    indexFileRepository.save(indexFile);
-                    subtitles.clear();
-                    indexItemRepository.flush();
-                    entityManager.clear();
-                    counterSubtitleSuccess.incrementAndGet();
+                        });
+                        indexItemRepository.saveAll(indexItems);
+                        subtitleRepository.saveAll(subtitles);
+                        indexFile.setIndexItems(indexItems);
+                        indexFile.setProcessed(true);
+                        indexFileRepository.save(indexFile);
+                        subtitles.clear();
+                        indexItemRepository.flush();
+                        entityManager.clear();
+                        counterSubtitleSuccess.incrementAndGet();
 
-                } catch (IOException | SubtitleParsingException | IndexOutOfBoundsException e) {
-                    counterSubtitleFailed.incrementAndGet();
-                    indexFile.setProcessed(true);
-                    indexFile.setProcessingError(e.getMessage());
-                    indexFileRepository.save(indexFile);
-                    indexItemRepository.flush();
-                    entityManager.clear();
+                    } catch (IOException | SubtitleParsingException | IndexOutOfBoundsException e) {
+                        counterSubtitleFailed.incrementAndGet();
+                        indexFile.setProcessed(true);
+                        indexFile.setProcessingError(e.getMessage());
+                        indexFileRepository.save(indexFile);
+                        indexItemRepository.flush();
+                        entityManager.clear();
+                    }
+
                 }
-
+                catch (Exception e){
+                    counterSubtitleFailed.incrementAndGet();
+                    logger.error(e.getMessage());
+                }
             }
 
         } while (page.hasNext());
