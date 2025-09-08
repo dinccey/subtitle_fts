@@ -408,7 +408,7 @@ public class IndexServiceImpl implements IndexService {
 
         // videoDate → from sql_params.date (parse to DateTime)
         String dateStr = root.path("sql_params").path("date").asText();
-        if (dateStr.equals("0000-00-00")) {
+        if (dateStr.equals("0000-00-00") || dateStr.length() < 5) {
             dateStr = root.path("sql_params").path("created_at").asText();
         }
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -443,7 +443,7 @@ public class IndexServiceImpl implements IndexService {
 
         // videoDate → from sql_params.date (parse to DateTime)
         String dateStr = root.path("sql_params").path("date").asText();
-        if (dateStr.equals("0000-00-00")) {
+        if (dateStr.equals("0000-00-00") || dateStr.length() < 5) {
             dateStr = root.path("sql_params").path("created_at").asText();
         }
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
