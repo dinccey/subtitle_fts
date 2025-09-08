@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.vaslim.subtitle_fts.scheduledjob.IndexingJob;
 import org.vaslim.subtitle_fts.service.IndexService;
 
 @Profile({"local","dev"})
@@ -14,15 +15,17 @@ import org.vaslim.subtitle_fts.service.IndexService;
 public class AdminController {
 
     private final IndexService indexService;
+    private final IndexingJob indexingJob;
 
-    public AdminController(IndexService indexService) {
+    public AdminController(IndexService indexService, IndexingJob indexingJob) {
         this.indexService = indexService;
+        this.indexingJob = indexingJob;
     }
 
     @GetMapping("/index")
     public ResponseEntity<?> runIndex(){
-        indexService.cleanupIndex();
-        indexService.runIndexing();
+        indexingJob.runDbCleanup();
+        indexingJob.run();
         return ResponseEntity.status(HttpStatus.OK).build();
     }
 
