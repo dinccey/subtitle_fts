@@ -10,6 +10,7 @@ import fr.noop.subtitle.vtt.VttObject;
 import fr.noop.subtitle.vtt.VttParser;
 import jakarta.persistence.EntityManager;
 import net.openhft.hashing.LongHashFunction;
+import org.hibernate.Hibernate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -234,7 +235,7 @@ public class IndexServiceImpl implements IndexService {
                             indexFile.setFileChanged(false);
                             indexFileRepository.save(indexFile);
                         }
-                    } catch (IOException | NoSuchAlgorithmException e) {
+                    } catch (Exception e) {
                         e.printStackTrace();
                         logger.error(e.getMessage());
                         //counterSubtitleFailed.incrementAndGet();
@@ -313,7 +314,7 @@ public class IndexServiceImpl implements IndexService {
         indexFileRepository.flush();
     }
 
-    private Set<Subtitle> indexItemsToSubtitles(Set<IndexItem> indexItems) {
+    public Set<Subtitle> indexItemsToSubtitles(Set<IndexItem> indexItems) {
         Set<Subtitle> subtitles = new HashSet<>();
         indexItems.forEach(indexItem -> {
             Subtitle subtitle = new Subtitle();
@@ -331,6 +332,9 @@ public class IndexServiceImpl implements IndexService {
 
     private IndexFile getIndexFileUpdated(File file) throws IOException, NoSuchAlgorithmException {
         IndexFile indexFile = indexFileRepository.findByFilePath(file.getAbsolutePath()).orElse(new IndexFile());
+        //initialize lazily-loaded items
+        Hibernate.initialize(indexFile.getIndexItems());
+
         String oldHash = indexFile.getFileHash();
         indexFile.setFileHash(generateXXH3(file));
         indexFile.setFileChanged(false);
