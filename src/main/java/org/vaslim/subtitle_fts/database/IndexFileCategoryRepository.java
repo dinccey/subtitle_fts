@@ -17,6 +17,8 @@ public interface IndexFileCategoryRepository extends JpaRepository<IndexFileCate
     Set<IndexFileCategory> findAllByFileDeletedIsTrue();
 
     Page<IndexFileCategory> findIndexFileByProcessedIsFalse(Pageable pageable);
+    Page<IndexFileCategory> findIndexFileByProcessingErrorIsNotNull(Pageable pageable);
+
 
     Optional<IndexFileCategory> findByFilePath(String filePath);
 

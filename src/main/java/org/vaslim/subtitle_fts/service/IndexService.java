@@ -9,4 +9,6 @@ public interface IndexService {
     void deleteIndex();
 
     void cleanupIndex();
+
+    void resetFailed();
 }
