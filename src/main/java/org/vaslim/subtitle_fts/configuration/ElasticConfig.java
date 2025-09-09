@@ -31,11 +31,15 @@ public class ElasticConfig extends ElasticsearchConfiguration {
 
     private ElasticsearchOperations elasticsearchOperations;
 
+    private static final long timeout = 30000; //30s
+
     @Override
     public ClientConfiguration clientConfiguration() {
         return ClientConfiguration.builder()
                 .connectedTo(elasticAddress)
                 .withBasicAuth(username, password)
+                .withConnectTimeout(timeout)
+                .withSocketTimeout(timeout)
                 .build();
     }
 
