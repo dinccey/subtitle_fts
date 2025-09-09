@@ -55,7 +55,7 @@ public class IndexServiceImpl implements IndexService {
 
     private static final Logger logger = LoggerFactory.getLogger(IndexServiceImpl.class);
 
-    private final IndexServiceImpl self;
+    private final IndexServiceMethodsForProxy indexServiceMethodsForProxy;
 
     private final ElasticsearchClient elasticsearchClient;
 
@@ -97,8 +97,8 @@ public class IndexServiceImpl implements IndexService {
     private String subtitleIndexFileExtension;
 
 
-    public IndexServiceImpl(IndexServiceImpl self, ElasticsearchClient elasticsearchClient, ElasticsearchOperations elasticsearchOperations, ElasticsearchTransport elasticsearchTransport, JdbcTemplate jdbcTemplate, FileService fileService, SubtitleRepository subtitleRepository, CategoryInfoRepository categoryInfoRepository, VttParser vttParser, IndexFileRepository indexFileRepository, IndexFileCategoryRepository indexFileCategoryRepository, IndexItemRepository indexItemRepository, EntityManager entityManager) {
-        this.self = self;
+    public IndexServiceImpl(IndexServiceMethodsForProxy indexServiceMethodsForProxy, ElasticsearchClient elasticsearchClient, ElasticsearchOperations elasticsearchOperations, ElasticsearchTransport elasticsearchTransport, JdbcTemplate jdbcTemplate, FileService fileService, SubtitleRepository subtitleRepository, CategoryInfoRepository categoryInfoRepository, VttParser vttParser, IndexFileRepository indexFileRepository, IndexFileCategoryRepository indexFileCategoryRepository, IndexItemRepository indexItemRepository, EntityManager entityManager) {
+        this.indexServiceMethodsForProxy = indexServiceMethodsForProxy;
         this.elasticsearchClient = elasticsearchClient;
         this.elasticsearchOperations = elasticsearchOperations;
         this.elasticsearchTransport = elasticsearchTransport;
@@ -228,7 +228,7 @@ public class IndexServiceImpl implements IndexService {
 
                 if (file.getAbsolutePath().endsWith(subtitleIndexFileExtension)) {
                     try {
-                        self.processIndexFileWIthItems(file);
+                        indexServiceMethodsForProxy.processIndexFileWIthItems(file);
                     } catch (Exception e) {
                         e.printStackTrace();
                         logger.error(e.getMessage());
@@ -308,51 +308,11 @@ public class IndexServiceImpl implements IndexService {
         indexFileRepository.flush();
     }
 
-    @Transactional
-    public void processIndexFileWIthItems(File file) throws IOException, NoSuchAlgorithmException {
-        IndexFile indexFile = getIndexFileUpdated(file);
-        if (indexFile.isFileChanged()) {
-            indexFile.setProcessed(false);
-            subtitleRepository.deleteAll(indexItemsToSubtitles(indexFile.getIndexItems()));
-            indexItemRepository.deleteAll(indexFile.getIndexItems());
-            indexFile.getIndexItems().clear();
-            indexFile.setFileChanged(false);
-            indexFileRepository.save(indexFile);
-        }
-    }
-
-    public Set<Subtitle> indexItemsToSubtitles(Set<IndexItem> indexItems) {
-        Set<Subtitle> subtitles = new HashSet<>();
-        indexItems.forEach(indexItem -> {
-            Subtitle subtitle = new Subtitle();
-            subtitle.setId(indexItem.getDocumentId());
-            subtitles.add(subtitle);
-        });
-        return subtitles;
-    }
 
     private CategoryInfo indexFileCategoryToCategory(String idHash) {
         CategoryInfo categoryInfo = new CategoryInfo();
         categoryInfo.setId(idHash);
         return categoryInfo;
-    }
-
-    private IndexFile getIndexFileUpdated(File file) throws IOException, NoSuchAlgorithmException {
-        IndexFile indexFile = indexFileRepository.findByFilePath(file.getAbsolutePath()).orElse(new IndexFile());
-
-        String oldHash = indexFile.getFileHash();
-        indexFile.setFileHash(generateXXH3(file));
-        indexFile.setFileChanged(false);
-        if (oldHash != null && !indexFile.getFileHash().equals(oldHash)) {
-            indexFile.setFileChanged(true);
-        }
-        if (indexFile.getFilePath() == null) {
-            indexFile.setFilePath(file.getAbsolutePath());
-        }
-        if (indexFile.isObjectChanged()) {
-            indexFileRepository.save(indexFile);
-        }
-        return indexFile;
     }
 
     private IndexFileCategory getIndexFileCategoryUpdated(File file) throws IOException, NoSuchAlgorithmException {
@@ -537,7 +497,7 @@ public class IndexServiceImpl implements IndexService {
             long startTime = System.currentTimeMillis();
             indexFileRepository.findAll().forEach(indexFile -> {
                 if (!Files.exists(Paths.get(indexFile.getFilePath()))) {
-                    subtitleRepository.deleteAll(indexItemsToSubtitles(indexFile.getIndexItems()));
+                    subtitleRepository.deleteAll(indexServiceMethodsForProxy.indexItemsToSubtitles(indexFile.getIndexItems()));
                     indexItemRepository.deleteAll(indexFile.getIndexItems());
                     indexFileRepository.delete(indexFile);
                     count.getAndIncrement();
