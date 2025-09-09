@@ -10,7 +10,6 @@ import fr.noop.subtitle.vtt.VttObject;
 import fr.noop.subtitle.vtt.VttParser;
 import jakarta.persistence.EntityManager;
 import net.openhft.hashing.LongHashFunction;
-import org.hibernate.Hibernate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -55,6 +54,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class IndexServiceImpl implements IndexService {
 
     private static final Logger logger = LoggerFactory.getLogger(IndexServiceImpl.class);
+
+    private final IndexServiceImpl self;
+
     private final ElasticsearchClient elasticsearchClient;
 
     private final ElasticsearchOperations elasticsearchOperations;
@@ -95,7 +97,8 @@ public class IndexServiceImpl implements IndexService {
     private String subtitleIndexFileExtension;
 
 
-    public IndexServiceImpl(ElasticsearchClient elasticsearchClient, ElasticsearchOperations elasticsearchOperations, ElasticsearchTransport elasticsearchTransport, JdbcTemplate jdbcTemplate, FileService fileService, SubtitleRepository subtitleRepository, CategoryInfoRepository categoryInfoRepository, VttParser vttParser, IndexFileRepository indexFileRepository, IndexFileCategoryRepository indexFileCategoryRepository, IndexItemRepository indexItemRepository, EntityManager entityManager) {
+    public IndexServiceImpl(IndexServiceImpl self, ElasticsearchClient elasticsearchClient, ElasticsearchOperations elasticsearchOperations, ElasticsearchTransport elasticsearchTransport, JdbcTemplate jdbcTemplate, FileService fileService, SubtitleRepository subtitleRepository, CategoryInfoRepository categoryInfoRepository, VttParser vttParser, IndexFileRepository indexFileRepository, IndexFileCategoryRepository indexFileCategoryRepository, IndexItemRepository indexItemRepository, EntityManager entityManager) {
+        this.self = self;
         this.elasticsearchClient = elasticsearchClient;
         this.elasticsearchOperations = elasticsearchOperations;
         this.elasticsearchTransport = elasticsearchTransport;
@@ -224,17 +227,8 @@ public class IndexServiceImpl implements IndexService {
             files.forEach(file -> {
 
                 if (file.getAbsolutePath().endsWith(subtitleIndexFileExtension)) {
-                    IndexFile indexFile;
                     try {
-                        indexFile = getIndexFileUpdated(file);
-                        if (indexFile.isFileChanged()) {
-                            indexFile.setProcessed(false);
-                            subtitleRepository.deleteAll(indexItemsToSubtitles(indexFile.getIndexItems()));
-                            indexItemRepository.deleteAll(indexFile.getIndexItems());
-                            indexFile.getIndexItems().clear();
-                            indexFile.setFileChanged(false);
-                            indexFileRepository.save(indexFile);
-                        }
+                        self.processIndexFileWIthItems(file);
                     } catch (Exception e) {
                         e.printStackTrace();
                         logger.error(e.getMessage());
@@ -314,6 +308,19 @@ public class IndexServiceImpl implements IndexService {
         indexFileRepository.flush();
     }
 
+    @Transactional
+    public void processIndexFileWIthItems(File file) throws IOException, NoSuchAlgorithmException {
+        IndexFile indexFile = getIndexFileUpdated(file);
+        if (indexFile.isFileChanged()) {
+            indexFile.setProcessed(false);
+            subtitleRepository.deleteAll(indexItemsToSubtitles(indexFile.getIndexItems()));
+            indexItemRepository.deleteAll(indexFile.getIndexItems());
+            indexFile.getIndexItems().clear();
+            indexFile.setFileChanged(false);
+            indexFileRepository.save(indexFile);
+        }
+    }
+
     public Set<Subtitle> indexItemsToSubtitles(Set<IndexItem> indexItems) {
         Set<Subtitle> subtitles = new HashSet<>();
         indexItems.forEach(indexItem -> {
@@ -332,8 +339,6 @@ public class IndexServiceImpl implements IndexService {
 
     private IndexFile getIndexFileUpdated(File file) throws IOException, NoSuchAlgorithmException {
         IndexFile indexFile = indexFileRepository.findByFilePath(file.getAbsolutePath()).orElse(new IndexFile());
-        //initialize lazily-loaded items
-        Hibernate.initialize(indexFile.getIndexItems());
 
         String oldHash = indexFile.getFileHash();
         indexFile.setFileHash(generateXXH3(file));
@@ -562,6 +567,42 @@ public class IndexServiceImpl implements IndexService {
             e.printStackTrace();
             logger.error("Cleanup failed: {}", e.getMessage());
         }
+    }
+
+    @Override
+    public void resetFailed() {
+        int pageNumber = 0;
+        int pageSize = 50;
+        Pageable pageable = PageRequest.of(pageNumber, pageSize);
+        //IndexFile
+        Page<IndexFile> page;
+        do {
+            page = indexFileRepository.findIndexFileByProcessingErrorIsNotNull(pageable);
+            page.forEach(indexFile -> {
+                try {
+                    indexFile.setProcessed(false);
+                    indexFile.setProcessingError(null);
+                    indexFileRepository.save(indexFile);
+                } catch (Exception e) {
+                    logger.error("Error resetting: {}", e.getMessage());
+                }
+            });
+        } while (page.hasNext());
+
+        //IndexFileCategory
+        Page<IndexFileCategory> pageCategory;
+        do {
+            pageCategory = indexFileCategoryRepository.findIndexFileByProcessingErrorIsNotNull(pageable);
+            pageCategory.forEach(indexFileCategory -> {
+                try {
+                    indexFileCategory.setProcessed(false);
+                    indexFileCategory.setProcessingError(null);
+                    indexFileCategoryRepository.save(indexFileCategory);
+                } catch (Exception e) {
+                    logger.error("Error resetting: {}", e.getMessage());
+                }
+            });
+        } while (pageCategory.hasNext());
     }
 
 }

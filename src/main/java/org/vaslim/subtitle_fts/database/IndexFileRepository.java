@@ -18,6 +18,8 @@ public interface IndexFileRepository extends JpaRepository<IndexFile, Long> {
 
     Page<IndexFile> findIndexFileByProcessedIsFalse(Pageable pageable);
 
+    Page<IndexFile> findIndexFileByProcessingErrorIsNotNull(Pageable pageable);
+
     Optional<IndexFile> findByFilePath(String filePath);
 
     @Modifying

@@ -34,4 +34,10 @@ public class AdminController {
         indexService.deleteIndex();
         return ResponseEntity.status(HttpStatus.OK).build();
     }
+
+    @GetMapping("/index/reset-failed")
+    public ResponseEntity<?> runResetFailed(){
+        indexService.resetFailed();
+        return ResponseEntity.status(HttpStatus.OK).build();
+    }
 }
